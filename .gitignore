@@ -1,0 +1,11 @@
+.python-version
+__pycache__
+.ipynb_checkpoints
+.DS_Store
+.vscode
+
+/data
+
+/models
+
+*.pickle
