@@ -72,7 +72,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		label[label_image == 26] = 1                            # 1: "car"
 		label[label_image == 24] = 2                            # 2: "pedestrian"
 		label[label_image == 19] = 3                            # 3: "signal"
-		label[(label_image == 7) & (label_image == 9)] = 4      # 4: "lane" (road + parking)
+		label[(label_image == 7) | (label_image == 9)] = 4      # 4: "lane" (road + parking)
 		label[(label_image == 0)] = 255                         # 255: ignore
 		return label
 	
