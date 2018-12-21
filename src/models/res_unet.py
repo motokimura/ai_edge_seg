@@ -51,9 +51,8 @@ class ResBlock(chainer.Chain):
 
 class ResUNet(chainer.Chain):
 
-    def __init__(self, class_num, insize, base_w=64, ignore_label=255, initialW=None):
+    def __init__(self, class_num, train_wh, test_wh, base_w=64, ignore_label=255, initialW=None):
         super(ResUNet, self).__init__()
-        assert insize % 8 == 0
 
         if initialW is None:
             initialW = initializers.HeNormal()
@@ -75,12 +74,13 @@ class ResUNet(chainer.Chain):
             # Classifier
             self.conv = L.Convolution2D(
                 base_w, class_num, 1, 1, 0, initialW=initialW, nobias=False)
-
-        self._insize = insize
+        
         self._ignore_label = ignore_label
+        self._train_wh = train_wh
+        self._test_wh = test_wh
 
     def predict(self, x):
-        insize = self._insize
+        in_w, in_h = self._train_wh if chainer.config.train else self._test_wh
 
         # Encoder
         e0_out = self.e0(x)
@@ -91,15 +91,15 @@ class ResUNet(chainer.Chain):
         h = self.bridge(e2_out)
         
         # Decoder
-        h = F.concat([F.resize_images(h, (insize//4, insize//4)), e2_out])
+        h = F.concat([F.resize_images(h, (in_h//4, in_w//4)), e2_out])
         del e2_out
         h = self.d2(h)
 
-        h = F.concat([F.resize_images(h, (insize//2, insize//2)), e1_out])
+        h = F.concat([F.resize_images(h, (in_h//2, in_w//2)), e1_out])
         del e1_out
         h = self.d1(h)
 
-        h = F.concat([F.resize_images(h, (insize, insize)), e0_out])
+        h = F.concat([F.resize_images(h, (in_h, in_w)), e0_out])
         del e0_out
         h = self.d0(h)
 
@@ -119,10 +119,3 @@ class ResUNet(chainer.Chain):
         chainer.report({'loss': loss, 'accuracy': accuracy}, self)
 
         return loss
-    
-    def test(self):
-        import numpy as np
-        from chainer import Variable
-
-        x = Variable(np.zeros(shape=[10, 3, self._insize, self._insize], dtype=np.float32))
-        return self.predict(x)
