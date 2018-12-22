@@ -11,8 +11,8 @@ import chainer.links as L
 from chainer import training
 from chainer.training import extensions
 
+from unet import UNet
 from unet_base import UNet_Base
-from res_unet import ResUNet
 from dataset import LabeledImageDataset
 
 from tensorboardX import SummaryWriter
@@ -67,7 +67,9 @@ def train_model():
 	# Classifier reports softmax cross entropy loss and accuracy at every
 	# iteration, which will be used by the PrintReport extension below.
 	if args.arch == 'res':
-		model = ResUNet(class_num=5, train_wh=tcrop_wh, test_wh=vcrop_wh)
+		model = UNet(class_num=5, train_wh=tcrop_wh, test_wh=vcrop_wh, residual=True)
+	if args.arch == 'plain':
+		model = UNet(class_num=5, train_wh=tcrop_wh, test_wh=vcrop_wh, residual=False)
 	if args.arch == 'unet_base':
 		model = UNet_Base(class_num=5)
 	if args.gpu >= 0:

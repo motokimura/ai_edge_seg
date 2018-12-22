@@ -8,10 +8,10 @@ import chainer.functions as F
 import chainer.links as L
 from chainer import initializers
 
-class ResBlock(chainer.Chain):
+class Block(chainer.Chain):
 
-    def __init__(self, in_ch, n_filters, strides, no_bn1=False, initialW=None):
-        super(ResBlock, self).__init__()
+    def __init__(self, in_ch, n_filters, strides, no_bn1=False, initialW=None, residual=True):
+        super(Block, self).__init__()
         if initialW is None:
             initialW = initializers.HeNormal()
 
@@ -27,57 +27,61 @@ class ResBlock(chainer.Chain):
             self.conv2 = L.Convolution2D(
 				n_filters[0], n_filters[1], 3, strides[1], 1, initialW=initialW, nobias=True)
             
-            # Shortcut path
-            self.conv3 = L.Convolution2D(
-                in_ch, n_filters[1], 1, strides[0], 0, initialW=initialW, nobias=True)
-            self.bn3 = L.BatchNormalization(n_filters[1])
+            if residual:
+                # Shortcut path
+                self.conv3 = L.Convolution2D(
+                    in_ch, n_filters[1], 1, strides[0], 0, initialW=initialW, nobias=True)
+                self.bn3 = L.BatchNormalization(n_filters[1])
+            
+        self._residual = residual
 
     def forward(self, x):
         # Residual path
         if self.bn1 is None:
-            h1 = x
+            h = x
         else:
-            h1 = F.relu(self.bn1(x))
-        h1 = self.conv1(h1)
-        h1 = self.conv2(F.relu(self.bn2(h1)))
+            h = F.relu(self.bn1(x))
+        h = self.conv1(h)
+        h = self.conv2(F.relu(self.bn2(h)))
 
-        # Shortcut path
-        ## In the paper, identity mapping is proposed fot the shortcut path, 
-        ## but it seems impossible because input `x` shape is always different from residual `h1` shape.
-        ## So in the shortcut path, I applied 1x1 convolution to input `x` with the same stride used in the residual path.
-        h2 = self.bn3(self.conv3(x))
+        if self._residual:
+            # Shortcut path
+            ## In the paper, identity mapping is used for the shortcut path, 
+            ## but it seems impossible because input `x` shape is always different from residual `h` shape.
+            ## So in the shortcut path, I applied 1x1 convolution to input `x` with the same stride used in the residual path.
+            h = h + self.bn3(self.conv3(x))
         
-        return (h1 + h2)
+        return h
 
-class ResUNet(chainer.Chain):
+class UNet(chainer.Chain):
 
-    def __init__(self, class_num, train_wh, test_wh, base_w=64, ignore_label=255, initialW=None):
-        super(ResUNet, self).__init__()
+    def __init__(self, class_num, train_wh, test_wh, base_w=64, ignore_label=255, initialW=None, residual=True):
+        super(UNet, self).__init__()
 
         if initialW is None:
             initialW = initializers.HeNormal()
 
         with self.init_scope():
             # Encoder
-            self.e0 = ResBlock(3, [base_w, base_w], [1, 1], True, initialW)
-            self.e1 = ResBlock(base_w, [2*base_w, 2*base_w], [2, 1], False, initialW)
-            self.e2 = ResBlock(2*base_w, [4*base_w, 4*base_w], [2, 1], False, initialW)
+            self.e0 = Block(3, [base_w, base_w], [1, 1], True, initialW, residual)
+            self.e1 = Block(base_w, [2*base_w, 2*base_w], [2, 1], False, initialW, residual)
+            self.e2 = Block(2*base_w, [4*base_w, 4*base_w], [2, 1], False, initialW, residual)
             
             # Bridge
-            self.bridge = ResBlock(4*base_w, [8*base_w, 8*base_w], [2, 1], False, initialW)
+            self.bridge = Block(4*base_w, [8*base_w, 8*base_w], [2, 1], False, initialW, residual)
             
             # Decoder
-            self.d2 = ResBlock(12*base_w, [4*base_w, 4*base_w], [1, 1], False, initialW)
-            self.d1 = ResBlock((4+2)*base_w, [2*base_w, 2*base_w], [1, 1], False, initialW)
-            self.d0 = ResBlock((2+1)*base_w, [base_w, base_w], [1, 1], False, initialW)
+            self.d2 = Block(12*base_w, [4*base_w, 4*base_w], [1, 1], False, initialW, residual)
+            self.d1 = Block((4+2)*base_w, [2*base_w, 2*base_w], [1, 1], False, initialW, residual)
+            self.d0 = Block((2+1)*base_w, [base_w, base_w], [1, 1], False, initialW, residual)
 
             # Classifier
             self.conv = L.Convolution2D(
                 base_w, class_num, 1, 1, 0, initialW=initialW, nobias=False)
         
-        self._ignore_label = ignore_label
         self._train_wh = train_wh
         self._test_wh = test_wh
+        self._ignore_label = ignore_label
 
     def predict(self, x):
         in_w, in_h = self._train_wh if chainer.config.train else self._test_wh
