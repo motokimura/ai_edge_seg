@@ -25,8 +25,14 @@ def _check_pillow_availability():
 						  str(_import_error))
 
 
-def _read_image_as_array(path, dtype):
+def _read_image_as_array(path, dtype, scale, resample=Image.NEAREST):
 	f = Image.open(path)
+
+	if scale != 1.0:
+		w, h = f.size
+		nh, nw = int(h * scale), int(w * scale)
+		f = f.resize((nw, nh), resample)
+
 	try:
 		image = np.asarray(f, dtype=dtype)
 	finally:
@@ -91,14 +97,10 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		image_filename, label_filename = self._pairs[i]
 		
 		image_path = os.path.join(self._root, image_filename)
-		image = _read_image_as_array(image_path, np.float64)
-		if self._scale != 1.0:
-			image = self._resize_image(image, cv2.INTER_AREA)
+		image = _read_image_as_array(image_path, np.float64, self._scale, Image.BILINEAR)
 		
 		label_path = os.path.join(self._root, label_filename)
-		label_image = _read_image_as_array(label_path, self._label_dtype)
-		if self._scale != 1.0:
-			label_image = self._resize_image(label_image, cv2.INTER_NEAREST)
+		label_image = _read_image_as_array(label_path, self._label_dtype, self._scale, Image.NEAREST)
 		label = self._get_label(label_image)
 
 		h, w, _ = image.shape
