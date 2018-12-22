@@ -3,6 +3,7 @@
 import os
 import numpy as np
 import random
+import cv2
 
 try:
 	from PIL import Image
@@ -36,7 +37,7 @@ def _read_image_as_array(path, dtype):
 
 
 class LabeledImageDataset(dataset_mixin.DatasetMixin):
-	def __init__(self, data_type, dataset, root, crop_wh, 
+	def __init__(self, data_type, dataset, root, crop_wh, scale=1,
 				 dtype=np.float32, label_dtype=np.int32, mean=None,
 				 random_crop=False, hflip=False, color_distort=False):
 		assert data_type in ['cityscapes', 'aiedge']
@@ -57,6 +58,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		if self._normalize:
 			self._mean = mean[np.newaxis, np.newaxis, :]
 		self._crop_w, self._crop_h = crop_wh
+		self._scale = scale
 		self._random_crop = random_crop
 		self._hflip = hflip
 		self._color_distort = color_distort
@@ -79,15 +81,24 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 	def _get_aiedge_label(self, label_image):
 		# TBI
 		pass
+	
+	def _resize_image(self, image, interp):
+		h, w = image.shape[0], image.shape[1]
+		nh, nw = int(h * self._scale), int(w * self._scale)
+		return cv2.resize(image, (nw, nh), interp)
 
 	def get_example(self, i):
 		image_filename, label_filename = self._pairs[i]
 		
 		image_path = os.path.join(self._root, image_filename)
 		image = _read_image_as_array(image_path, np.float64)
+		if self._scale != 1.0:
+			image = self._resize_image(image, cv2.INTER_AREA)
 		
 		label_path = os.path.join(self._root, label_filename)
 		label_image = _read_image_as_array(label_path, self._label_dtype)
+		if self._scale != 1.0:
+			label_image = self._resize_image(label_image, cv2.INTER_NEAREST)
 		label = self._get_label(label_image)
 
 		h, w, _ = image.shape

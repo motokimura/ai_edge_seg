@@ -25,6 +25,10 @@ def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
 	parser.add_argument('arch', choices=['res', 'plain', 'unet_base'])
+	parser.add_argument('--tscale', '-t', type=float, default=1.0,
+						help='Scale factor to resize train image')
+	parser.add_argument('--vscale', '-v', type=float, default=1.0,
+						help='Scale factor to resize val image')
 	parser.add_argument('--batchsize', '-b', type=int, default=4,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
@@ -46,7 +50,7 @@ def train_model():
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
 		tcrop_wh = (512, 512)
-		vcrop_wh = (2048, 1024)
+		vcrop_wh = (int(2048 * args.vscale), int(1024 * args.vscale))
 	if args.data_type == 'aiedge':
 		# TBI
 		pass
@@ -85,10 +89,10 @@ def train_model():
 	mean = np.load(os.path.join(data_root, "mean.npy"))
 	
 	# Load the MNIST dataset
-	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, tcrop_wh,
+	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, tcrop_wh, scale=args.tscale,
 								mean=mean, random_crop=True, hflip=True, color_distort=False)
 	
-	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, vcrop_wh,
+	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, vcrop_wh, scale=args.vscale,
 								mean=mean, random_crop=False, hflip=False, color_distort=False)
 
 	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
