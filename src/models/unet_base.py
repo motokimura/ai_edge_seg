@@ -6,10 +6,10 @@ import chainer
 import chainer.functions as F
 import chainer.links as L
 
-class UNet(chainer.Chain):
+class UNet_Base(chainer.Chain):
 
     def __init__(self, class_num, ignore_label=255):
-        super(UNet, self).__init__()
+        super(UNet_Base, self).__init__()
         with self.init_scope():
             self.c0=L.Convolution2D(3, 32, 3, 1, 1)
             self.c1=L.Convolution2D(32, 64, 4, 2, 1)

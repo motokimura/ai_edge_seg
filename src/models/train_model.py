@@ -11,7 +11,7 @@ import chainer.links as L
 from chainer import training
 from chainer.training import extensions
 
-from unet import UNet
+from unet_base import UNet_Base
 from res_unet import ResUNet
 from dataset import LabeledImageDataset
 
@@ -24,7 +24,7 @@ import os
 def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
-	parser.add_argument('arch', choices=['res', 'unet'])
+	parser.add_argument('arch', choices=['res', 'plain', 'unet_base'])
 	parser.add_argument('--batchsize', '-b', type=int, default=4,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
@@ -68,8 +68,8 @@ def train_model():
 	# iteration, which will be used by the PrintReport extension below.
 	if args.arch == 'res':
 		model = ResUNet(class_num=5, train_wh=tcrop_wh, test_wh=vcrop_wh)
-	if args.arch == 'unet':
-		model = UNet(class_num=5)
+	if args.arch == 'unet_base':
+		model = UNet_Base(class_num=5)
 	if args.gpu >= 0:
 		# Make a specified GPU current
 		chainer.cuda.get_device_from_id(args.gpu).use()
