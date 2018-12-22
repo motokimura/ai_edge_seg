@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # Set image name
-IMAGE="cityscapes:latest"
+IMAGE="seg:latest"
 
 # Get project root dicrectory
 THIS_DIR=$(cd $(dirname $0); pwd)

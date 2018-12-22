@@ -24,7 +24,7 @@ import os
 def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
-	parser.add_argument('--batchsize', '-b', type=int, default=6,
+	parser.add_argument('--batchsize', '-b', type=int, default=4,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
 						help='Number of images in each test mini-batch')
@@ -44,7 +44,7 @@ def train_model():
 
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
-		tcrop_wh = (384, 384)
+		tcrop_wh = (512, 512)
 		vcrop_wh = (2048, 1024)
 	if args.data_type == 'aiedge':
 		# TBI

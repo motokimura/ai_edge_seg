@@ -1,6 +1,6 @@
 #!/bin/bash
 
 # Exec
-CONTAINER="cityscapes"
+CONTAINER="seg"
 
 nvidia-docker exec -it ${CONTAINER} /bin/bash

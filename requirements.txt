@@ -1,4 +1,4 @@
-cupy-cuda80==6.0.0b1
+cupy-cuda92==6.0.0b1
 chainer==6.0.0b1
 numpy
 pyyaml

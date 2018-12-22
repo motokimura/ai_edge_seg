@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set image name
-IMAGE="cityscapes:latest"
+IMAGE="seg:latest"
 if [ $# -eq 1 ]; then
     IMAGE=$1
 fi
@@ -14,10 +14,10 @@ PROJ_DIR=`dirname ${THIS_DIR}`
 #mkdir -p ${PROJ_DIR}/data ${PROJ_DIR}/models
 
 # Run container
-CONTAINER="cityscapes"
+CONTAINER="seg"
 
 nvidia-docker run -it --rm --ipc=host \
-	-p 8889:8888 -p 6007:6006 \
+	-p 8888:8888 -p 6006:6006 \
 	-v ${PROJ_DIR}:/work \
 	--name ${CONTAINER} \
 	${IMAGE}

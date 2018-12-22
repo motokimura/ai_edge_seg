@@ -1,4 +1,4 @@
-FROM nvidia/cuda:8.0-cudnn6-devel
+FROM nvidia/cuda:9.2-cudnn7-devel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     libopencv-dev \
     build-essential libssl-dev libbz2-dev libreadline-dev libsqlite3-dev curl \
-    wget ca-certificates && \
+    wget ca-certificates cmake && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 ARG UID
@@ -26,7 +26,8 @@ RUN pyenv install ${PYTHON_VERSION} && pyenv global ${PYTHON_VERSION}
 RUN pip install -U pip setuptools
 
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt
+RUN CHAINER_BUILD_CHAINERX=1 CHAINERX_BUILD_CUDA=1 \
+    pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Setup jupyter
 RUN jupyter notebook --generate-config && \
