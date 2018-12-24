@@ -16,6 +16,7 @@ from dataset import LabeledImageDataset
 
 from tensorboardX import SummaryWriter
 from tboard_logger import TensorboardLogger
+from iou_evaluator import IouEvaluator
 
 import os
 
@@ -100,6 +101,7 @@ def train_model():
 
 	# Evaluate the model with the test dataset for each epoch
 	trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu))
+	trainer.extend(IouEvaluator(test_iter, model, device=args.gpu))
 
 	# Dump a computational graph from 'loss' variable at the first iteration
 	# The "main" refers to the target link of the "main" optimizer.
