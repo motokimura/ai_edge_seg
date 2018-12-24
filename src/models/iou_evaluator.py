@@ -54,9 +54,10 @@ class IouEvaluator(extensions.Evaluator):
                     if self.device_id >= 0:
                         y = chainer.cuda.to_cpu(y)
                     preds = y.argmax(axis=1)
-                    
-                    labels_all.append(labels)
-                    preds_all.append(preds)
+
+                    for label, pred in zip(labels, preds):
+                        labels_all.append(label)
+                        preds_all.append(pred)
 
             # print(observation)
             summary.add(observation)
