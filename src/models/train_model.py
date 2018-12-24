@@ -26,7 +26,7 @@ def train_model():
 	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
 	parser.add_argument('--scale', '-s', type=float, default=1.0,
 						help='Scale factor to resize images')
-	parser.add_argument('--batchsize', '-b', type=int, default=4,
+	parser.add_argument('--batchsize', '-b', type=int, default=3,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
 						help='Number of images in each test mini-batch')
