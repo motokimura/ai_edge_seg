@@ -155,7 +155,7 @@ def train_model():
 	entries = entries = ['iou']
 	for label_name in label_names:
 		entries.append('iou/{:s}'.format(label_name))
-	trainer.extend(TensorboardLogger(writer, entries), x='epoch')
+	trainer.extend(TensorboardLogger(writer, entries, x='epoch'))
 	
 	if args.resume:
 		# Resume from a snapshot
