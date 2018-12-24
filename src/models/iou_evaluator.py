@@ -65,7 +65,7 @@ class IouEvaluator(extensions.Evaluator):
         iou = ss_eval['iou'][1:] # Assuming label '0' is assigned for background
 
         iou_observation = {}
-        iou_observation['miou'] = np.np.nanmean(iou)
+        iou_observation['miou'] = np.nanmean(iou)
         for i, label_name in enumerate(self.label_names):
             iou_observation['iou/{:s}'.format(label_name)] = iou[i]
         summary.add(iou_observation)

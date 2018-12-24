@@ -100,7 +100,7 @@ def train_model():
 	trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=log_dir)
 
 	# Evaluate the model with the test dataset for each epoch
-	trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu))
+	#trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu))
 	label_names = ['car', 'pedestrian', 'signal', 'lane']
 	trainer.extend(IouEvaluator(test_iter, model, device=args.gpu, label_names=label_names))
 
@@ -128,6 +128,10 @@ def train_model():
 			extensions.PlotReport(
 				['main/accuracy', 'validation/main/accuracy'],
 				'epoch', file_name='accuracy.png'))
+		trainer.extend(
+			extensions.PlotReport(
+				['miou'],
+				'epoch', file_name='iou.png'))
 
 	# Print selected entries of the log to stdout
 	# Here "main" refers to the target link of the "main" optimizer again, and
@@ -143,8 +147,10 @@ def train_model():
 	
 	# Write training log to TensorBoard log file
 	trainer.extend(TensorboardLogger(writer,
-		['main/loss', 'validation/main/loss',
-		 'main/accuracy', 'validation/main/accuracy']))
+		['main/loss', 'main/accuracy', 
+		 'validation/main/loss', 'validation/main/accuracy',
+		 'iou/car', 'iou/pedestrial', 'iou/signal', 'iou/lane',
+		 'miou']))
 	
 	if args.resume:
 		# Resume from a snapshot
