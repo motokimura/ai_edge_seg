@@ -27,7 +27,7 @@ def train_model():
 	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
 	parser.add_argument('--scale', '-s', type=float, default=1.0,
 						help='Scale factor to resize images')
-	parser.add_argument('--batchsize', '-b', type=int, default=3,
+	parser.add_argument('--batchsize', '-b', type=int, default=2,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
 						help='Number of images in each test mini-batch')
@@ -110,11 +110,12 @@ def train_model():
 
 	# Take a snapshot for each specified epoch
 	frequency = args.epoch if args.frequency == -1 else max(1, args.frequency)
-	trainer.extend(extensions.snapshot(), trigger=(frequency, 'epoch'))
+	trainer.extend(extensions.snapshot(
+		filename='snapshot_epoch_{.updater.epoch}'), trigger=(frequency, 'epoch'))
 	
 	# Save trained model for each specific epoch
 	trainer.extend(extensions.snapshot_object(
-		model, 'model_iter_{.updater.epoch}'), trigger=(frequency, 'epoch'))
+		model, filename='model_epoch_{.updater.epoch}'), trigger=(frequency, 'epoch'))
 
 	# Write a log of evaluation statistics for each epoch
 	trainer.extend(extensions.LogReport())
