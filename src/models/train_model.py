@@ -130,7 +130,7 @@ def train_model():
 				'epoch', file_name='accuracy.png'))
 		trainer.extend(
 			extensions.PlotReport(
-				['miou'],
+				['iou'],
 				'epoch', file_name='iou.png'))
 
 	# Print selected entries of the log to stdout
@@ -139,18 +139,19 @@ def train_model():
 	# Entries other than 'epoch' are reported by the Classifier link, called by
 	# either the updater or the evaluator.
 	trainer.extend(extensions.PrintReport(
-		['epoch', 'miou', 'main/loss', 'validation/main/loss',
+		['epoch', 'iou', 'main/loss', 'validation/main/loss',
 		 'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
 
 	# Print a progress bar to stdout
 	trainer.extend(extensions.ProgressBar())
 	
 	# Write training log to TensorBoard log file
-	trainer.extend(TensorboardLogger(writer,
-		['main/loss', 'main/accuracy', 
-		 'validation/main/loss', 'validation/main/accuracy',
-		 'iou/car', 'iou/pedestrial', 'iou/signal', 'iou/lane',
-		 'miou']))
+	entries = ['main/loss', 'main/accuracy', 
+		 'validation/main/loss', 'validation/main/accuracy', 
+		 'iou']
+	for label_name in label_names:
+		entries.append('iou/{:s}'.format(label_name))
+	trainer.extend(TensorboardLogger(writer, entries))
 	
 	if args.resume:
 		# Resume from a snapshot
