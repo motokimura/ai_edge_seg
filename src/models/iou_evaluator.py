@@ -60,12 +60,14 @@ class IouEvaluator(extensions.Evaluator):
         model = self._targets['main']
 
         _, labels = in_arrays
-        if self.device >= 0:
-            labels = chainer.cuda.to_cpu(labels)
+        #if self.device >= 0:
+        #    labels = chainer.cuda.to_cpu(labels)
+        labels = chainer.cuda.to_cpu(labels)
 
         y = model.y.data
-        if self.device >= 0:
-            y = chainer.cuda.to_cpu(y)
+        #if self.device >= 0:
+        #    y = chainer.cuda.to_cpu(y)
+        y = chainer.cuda.to_cpu(y)
         # print(y)
         y = y.argmax(axis=1)
 
