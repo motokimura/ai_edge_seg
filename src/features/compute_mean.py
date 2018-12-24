@@ -37,8 +37,8 @@ if __name__ == '__main__':
 		data_root = '../../data/cityscapes'
 		crop_wh = (2048, 1024)
 	if args.data_type == 'aiedge':
-		# TBI
-		pass
+		data_root = '../../data/aiedge'
+		crop_wh = (1936, 1216)
 
 	data_list = os.path.join(data_root, 'train.txt')
 	output = os.path.join(data_root, 'mean.npy')

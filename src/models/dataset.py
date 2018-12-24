@@ -84,8 +84,13 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		return label
 	
 	def _get_aiedge_label(self, label_image):
-		# TBI
-		pass
+		h, w = label_image.shape[0], label_image.shape[1]
+		label = np.zeros(shape=[h, w], dtype=self._label_dtype)  # 0: "background"
+		label[(label_image==[0, 0, 255]).sum(axis=2) == 3] = 1	 # 1: "car"
+		label[(label_image==[255, 0, 0]).sum(axis=2) == 3] = 2	 # 2: "pedestrian"
+		label[(label_image==[255, 255, 0]).sum(axis=2) == 3] = 3 # 3: "signal"
+		label[(label_image==[69, 47, 142]).sum(axis=2) == 3] = 4 # 4: "lane" (road + parking)
+		return label
 	
 	def _resize_image(self, image, interp):
 		h, w = image.shape[0], image.shape[1]
