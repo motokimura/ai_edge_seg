@@ -4,9 +4,16 @@ from chainer.training import extensions
 from chainer import function
 import numpy as np
 import copy
+from chainercv.evaluations import eval_semantic_segmentation
 
 class IouEvaluator(extensions.Evaluator):
 
+    def __init__(self, iterator, target, device, label_names=None):
+        super(IouEvaluator, self).__init__(
+            iterator, target, device=device)
+        self.device_id = device
+        self.label_names = label_names
+    
     def evaluate(self):
         iterator = self._iterators['main']
         model = self._targets['main']
@@ -23,8 +30,8 @@ class IouEvaluator(extensions.Evaluator):
 
         summary = reporter_module.DictSummary()
 
-        and_count = 0.
-        or_count = 0.
+        labels_all = []
+        preds_all = []
 
         for batch in it:
             observation = {}
@@ -34,24 +41,33 @@ class IouEvaluator(extensions.Evaluator):
                 with function.no_backprop_mode():
                     if isinstance(in_arrays, tuple):
                         eval_func(*in_arrays)
-                        ac, oc = self.iou(in_arrays)
                     elif isinstance(in_arrays, dict):
                         eval_func(**in_arrays)
-                        ac, oc = self.iou(in_arrays)
                     else:
                         eval_func(in_arrays)
-                        ac, oc = self.iou(in_arrays)
-                    and_count = and_count + ac
-                    or_count = or_count + oc
+                    
+                    _, labels = in_arrays
+                    if self.device_id >= 0:
+                        labels = chainer.cuda.to_cpu(labels)
+
+                    y = model.y.data
+                    if self.device_id >= 0:
+                        y = chainer.cuda.to_cpu(y)
+                    preds = y.argmax(axis=1)
+                    
+                    labels_all.append(labels)
+                    preds_all.append(preds)
 
             # print(observation)
             summary.add(observation)
+        
+        ss_eval = eval_semantic_segmentation(preds_all, labels_all)
+        iou = ss_eval['iou'][1:] # Assuming label '0' is assigned for background
 
         iou_observation = {}
-        if(or_count == 0):
-            iou_observation['iou'] = 0.
-        else:
-            iou_observation['iou'] = float(and_count) / or_count
+        iou_observation['miou'] = np.np.nanmean(iou)
+        for i, label_name in enumerate(self.label_names):
+            iou_observation['iou/{:s}'.format(label_name)] = iou[i]
         summary.add(iou_observation)
 
         return summary.compute_mean()
@@ -60,14 +76,12 @@ class IouEvaluator(extensions.Evaluator):
         model = self._targets['main']
 
         _, labels = in_arrays
-        #if self.device >= 0:
-        #    labels = chainer.cuda.to_cpu(labels)
-        labels = chainer.cuda.to_cpu(labels)
+        if self.device_id >= 0:
+            labels = chainer.cuda.to_cpu(labels)
 
         y = model.y.data
-        #if self.device >= 0:
-        #    y = chainer.cuda.to_cpu(y)
-        y = chainer.cuda.to_cpu(y)
+        if self.device_id >= 0:
+            y = chainer.cuda.to_cpu(y)
         # print(y)
         y = y.argmax(axis=1)
 

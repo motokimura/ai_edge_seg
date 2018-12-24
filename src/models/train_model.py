@@ -101,7 +101,8 @@ def train_model():
 
 	# Evaluate the model with the test dataset for each epoch
 	trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu))
-	trainer.extend(IouEvaluator(test_iter, model, device=args.gpu))
+	label_names = ['car', 'pedestrian', 'signal', 'lane']
+	trainer.extend(IouEvaluator(test_iter, model, device=args.gpu, label_names=label_names))
 
 	# Dump a computational graph from 'loss' variable at the first iteration
 	# The "main" refers to the target link of the "main" optimizer.
@@ -134,7 +135,7 @@ def train_model():
 	# Entries other than 'epoch' are reported by the Classifier link, called by
 	# either the updater or the evaluator.
 	trainer.extend(extensions.PrintReport(
-		['epoch', 'main/loss', 'validation/main/loss',
+		['epoch', 'miou', 'main/loss', 'validation/main/loss',
 		 'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
 
 	# Print a progress bar to stdout
