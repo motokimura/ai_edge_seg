@@ -89,7 +89,7 @@ def train_model():
 								mean=mean, random_crop=True, hflip=True, color_distort=color_distort)
 	
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, vcrop_wh, scale=args.scale,
-								mean=mean, random_crop=False, hflip=False, color_distort=color_distort)
+								mean=mean, random_crop=False, hflip=False, color_distort=False)
 
 	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
 	test_iter = chainer.iterators.SerialIterator(test, args.test_batchsize, repeat=False, shuffle=False)
