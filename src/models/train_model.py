@@ -12,7 +12,6 @@ from chainer import training
 from chainer.training import extensions
 
 from unet import UNet
-from unet_base import UNet_Base
 from dataset import LabeledImageDataset
 
 from tensorboardX import SummaryWriter
@@ -24,11 +23,9 @@ import os
 def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
-	parser.add_argument('arch', choices=['res', 'plain', 'unet_base'])
-	parser.add_argument('--tscale', '-t', type=float, default=1.0,
-						help='Scale factor to resize train image')
-	parser.add_argument('--vscale', '-v', type=float, default=1.0,
-						help='Scale factor to resize val image')
+	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
+	parser.add_argument('--scale', '-s', type=float, default=1.0,
+						help='Scale factor to resize images')
 	parser.add_argument('--batchsize', '-b', type=int, default=4,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
@@ -49,8 +46,10 @@ def train_model():
 
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
-		tcrop_wh = (512, 512)
-		vcrop_wh = (int(2048 * args.vscale), int(1024 * args.vscale))
+		img_wh = int(2048 * args.scale), int(1024 * args.scale)
+		vcrop_wh = img_wh
+		tcrop_wh = min(img_wh), min(img_wh)
+		color_distort = True
 	if args.data_type == 'aiedge':
 		# TBI
 		pass
@@ -70,12 +69,8 @@ def train_model():
 	# Set up a neural network to train
 	# Classifier reports softmax cross entropy loss and accuracy at every
 	# iteration, which will be used by the PrintReport extension below.
-	if args.arch == 'res':
-		model = UNet(class_num=5, train_wh=tcrop_wh, test_wh=vcrop_wh, residual=True)
-	if args.arch == 'plain':
-		model = UNet(class_num=5, train_wh=tcrop_wh, test_wh=vcrop_wh, residual=False)
-	if args.arch == 'unet_base':
-		model = UNet_Base(class_num=5)
+	if args.arch == 'unet':
+		model = UNet(class_num=5)
 	if args.gpu >= 0:
 		# Make a specified GPU current
 		chainer.cuda.get_device_from_id(args.gpu).use()
@@ -89,11 +84,11 @@ def train_model():
 	mean = np.load(os.path.join(data_root, "mean.npy"))
 	
 	# Load the MNIST dataset
-	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, tcrop_wh, scale=args.tscale,
-								mean=mean, random_crop=True, hflip=True, color_distort=False)
+	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, tcrop_wh, scale=args.scale,
+								mean=mean, random_crop=True, hflip=True, color_distort=color_distort)
 	
-	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, vcrop_wh, scale=args.vscale,
-								mean=mean, random_crop=False, hflip=False, color_distort=False)
+	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, vcrop_wh, scale=args.scale,
+								mean=mean, random_crop=False, hflip=False, color_distort=color_distort)
 
 	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
 	test_iter = chainer.iterators.SerialIterator(test, args.test_batchsize, repeat=False, shuffle=False)
