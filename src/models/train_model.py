@@ -114,7 +114,7 @@ def train_model():
 	
 	# Save trained model for each specific epoch
 	trainer.extend(extensions.snapshot_object(
-		model, 'model_iter_{.updater.iteration}'), trigger=(frequency, 'epoch'))
+		model, 'model_iter_{.updater.epoch}'), trigger=(frequency, 'epoch'))
 
 	# Write a log of evaluation statistics for each epoch
 	trainer.extend(extensions.LogReport())
@@ -122,8 +122,9 @@ def train_model():
 	# Save two plot images to the result dir
 	if args.plot and extensions.PlotReport.available():
 		trainer.extend(
-			extensions.PlotReport(['main/loss', 'validation/main/loss'],
-								  'epoch', file_name='loss.png'))
+			extensions.PlotReport(
+				['main/loss', 'validation/main/loss'],
+				'epoch', file_name='loss.png'))
 		trainer.extend(
 			extensions.PlotReport(
 				['main/accuracy', 'validation/main/accuracy'],
@@ -146,12 +147,15 @@ def train_model():
 	trainer.extend(extensions.ProgressBar())
 	
 	# Write training log to TensorBoard log file
-	entries = ['main/loss', 'main/accuracy', 
-		 'validation/main/loss', 'validation/main/accuracy', 
-		 'iou']
+	trainer.extend(TensorboardLogger(writer, [
+		'main/loss', 'main/accuracy', 
+		'validation/main/loss', 'validation/main/accuracy'
+		], x='iteration'))
+
+	entries = entries = ['iou']
 	for label_name in label_names:
 		entries.append('iou/{:s}'.format(label_name))
-	trainer.extend(TensorboardLogger(writer, entries))
+	trainer.extend(TensorboardLogger(writer, entries), x='epoch')
 	
 	if args.resume:
 		# Resume from a snapshot

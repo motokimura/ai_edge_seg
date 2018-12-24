@@ -6,10 +6,13 @@ import cupy
 
 class TensorboardLogger(extension.Extension):
 
-	def __init__(self, logger, entries=None):
+	def __init__(self, logger, entries=None, x='iteration'):
 		
 		self._entries = entries
 		self._logger = logger
+
+		assert x in ['iteration', 'epoch']
+		self._x = x
 		
 		return
 
@@ -23,6 +26,7 @@ class TensorboardLogger(extension.Extension):
 			if isinstance(v, cupy.core.core.ndarray):
 				v = Variable(v)
 			
-			self._logger.add_scalar(k, v, trainer.updater.iteration)
+			x = trainer.updater.iteration if (self._x == 'iteration') else trainer.updater.epoch
+			self._logger.add_scalar(k, v, x)
 
 		return
