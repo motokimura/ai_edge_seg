@@ -84,6 +84,7 @@ class UNet(chainer.Chain):
         del d2
         d0 = self.dc0(F.concat([e0, d1]))
 
+        self.y = d0
         return d0
 
     def forward(self, x, t):
