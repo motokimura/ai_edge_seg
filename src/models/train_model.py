@@ -55,8 +55,8 @@ def train_model():
 		data_root = '../../data/cityscapes'
 		color_distort = True
 	if args.data_type == 'aiedge':
-		data_root = '../../data/cityscapes'
-		#color_distort = False
+		data_root = '../../data/aiedge'
+		color_distort = True
 		pass
 	
 	print('Data type: {}'.format(args.data_type))
