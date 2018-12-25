@@ -4,6 +4,7 @@ import os
 import numpy as np
 import random
 import cv2
+import math
 
 try:
 	from PIL import Image
@@ -76,11 +77,11 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 	
 	def _get_cityscapes_label(self, label_image):
 		h, w = label_image.shape[0], label_image.shape[1]
-		label = np.zeros(shape=[h, w], dtype=self._label_dtype) # 0: "background"
-		label[label_image == 26] = 1                            # 1: "car"
-		label[label_image == 24] = 2                            # 2: "pedestrian"
-		label[label_image == 19] = 3                            # 3: "signal"
-		label[(label_image == 7) | (label_image == 9)] = 4      # 4: "lane" (road + parking)
+		label = np.zeros(shape=[h, w], dtype=self._label_dtype)  # 0: "background"
+		label[label_image == 26] = 1                             # 1: "car"
+		label[label_image == 24] = 2                             # 2: "pedestrian"
+		label[label_image == 19] = 3                             # 3: "signal"
+		label[(label_image == 7) | (label_image == 9)] = 4       # 4: "lane" (road + parking)
 		return label
 	
 	def _get_aiedge_label(self, label_image):
@@ -91,11 +92,6 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		label[(label_image==[255, 255, 0]).sum(axis=2) == 3] = 3 # 3: "signal"
 		label[(label_image==[69, 47, 142]).sum(axis=2) == 3] = 4 # 4: "lane" (road + parking)
 		return label
-	
-	def _resize_image(self, image, interp):
-		h, w = image.shape[0], image.shape[1]
-		nh, nw = int(h * self._scale), int(w * self._scale)
-		return cv2.resize(image, (nw, nh), interp)
 
 	def get_example(self, i):
 		image_filename, label_filename = self._pairs[i]
@@ -108,6 +104,22 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		label = self._get_label(label_image)
 
 		h, w, _ = image.shape
+
+		if h < self._crop_h:
+			# Padding
+			pad_top = (self._crop_h - h) // 2
+			pad_bottom = self._crop_h - h - pad_top
+			image = np.pad(image, [(pad_top, pad_bottom), (0, 0), (0, 0)], 'symmetric')
+			label = np.pad(label, [(pad_top, pad_bottom), (0, 0)], 'constant', constant_values=255)
+			h = self._crop_h
+		
+		if w < self._crop_w:
+			# Padding
+			pad_left = (self._crop_w - w) // 2
+			pad_right = self._crop_w - w - pad_left
+			image = np.pad(image, [(0, 0), (pad_left, pad_right), (0, 0)], 'symmetric')
+			label = np.pad(label, [(0, 0), (pad_left, pad_right)], 'constant', constant_values=255)
+			w = self._crop_w
 
 		if self._random_crop:
 			# Random crop

@@ -8,11 +8,12 @@ from chainercv.evaluations import eval_semantic_segmentation
 
 class IouEvaluator(extensions.Evaluator):
 
-    def __init__(self, iterator, target, device, label_names=None):
+    def __init__(self, iterator, target, device, label_names=None, ignore_value=255):
         super(IouEvaluator, self).__init__(
             iterator, target, device=device)
         self.device_id = device
         self.label_names = label_names
+        self.ignore_value = ignore_value
     
     def evaluate(self):
         iterator = self._iterators['main']
@@ -49,6 +50,9 @@ class IouEvaluator(extensions.Evaluator):
                     _, labels = in_arrays
                     if self.device_id >= 0:
                         labels = chainer.cuda.to_cpu(labels)
+                    
+                    # Exclude pixels with ignore value from the evaluation
+                    labels[labels == self.ignore_value] = -1
 
                     y = model.y.data
                     if self.device_id >= 0:
@@ -72,22 +76,3 @@ class IouEvaluator(extensions.Evaluator):
         summary.add(iou_observation)
 
         return summary.compute_mean()
-
-    def iou(self, in_arrays):
-        model = self._targets['main']
-
-        _, labels = in_arrays
-        if self.device_id >= 0:
-            labels = chainer.cuda.to_cpu(labels)
-
-        y = model.y.data
-        if self.device_id >= 0:
-            y = chainer.cuda.to_cpu(y)
-        # print(y)
-        y = y.argmax(axis=1)
-
-        # print('labels', labels)
-        # print('predct', y)
-        and_count = (labels & y).sum()
-        or_count = (labels | y).sum()
-        return and_count, or_count

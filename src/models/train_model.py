@@ -25,9 +25,13 @@ def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
 	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
-	parser.add_argument('--scale', '-s', type=float, default=1.0,
+	parser.add_argument('--scale', '-s', type=float, default=0.5,
 						help='Scale factor to resize images')
-	parser.add_argument('--batchsize', '-b', type=int, default=2,
+	parser.add_argument('--tcrop', '-t', type=int, nargs=2, default=[1024, 512],
+						help='Crop size for train images [w, h]')
+	parser.add_argument('--vcrop', '-v', type=int, nargs=2, default=[1024, 512],
+						help='Crop size for train images [w, h]')
+	parser.add_argument('--batchsize', '-b', type=int, default=5,
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
 						help='Number of images in each test mini-batch')
@@ -39,6 +43,8 @@ def train_model():
 						help='GPU ID (negative value indicates CPU)')
 	parser.add_argument('--out', '-o', default='log_00',
 						help='Directory to output the result under "models" directory')
+	parser.add_argument('--weight', '-w', default=None,
+						help='Path to pretrained model to initialize the weight')
 	parser.add_argument('--resume', '-r', default='',
 						help='Resume the training from snapshot')
 	parser.add_argument('--noplot', dest='plot', action='store_false',
@@ -47,19 +53,19 @@ def train_model():
 
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
-		img_wh = int(2048 * args.scale), int(1024 * args.scale)
-		vcrop_wh = img_wh
-		tcrop_wh = min(img_wh), min(img_wh)
 		color_distort = True
 	if args.data_type == 'aiedge':
-		# TBI
+		data_root = '../../data/cityscapes'
+		#color_distort = False
 		pass
-
-	print('GPU: {}'.format(args.gpu))
+	
+	print('Data type: {}'.format(args.data_type))
+	print('# Image scale: {}'.format(args.scale))
+	print('# Train crop-size: {}'.format(args.tcrop))
+	print('# Test crop-size: {}'.format(args.vcrop))
 	print('# Minibatch-size: {}'.format(args.batchsize))
-	print('# Train crop-size: {}'.format(tcrop_wh))
-	print('# Val crop-size: {}'.format(vcrop_wh))
 	print('# Epoch: {}'.format(args.epoch))
+	print('# GPU: {}'.format(args.gpu))
 	print('')
 	
 	this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -72,6 +78,8 @@ def train_model():
 	# iteration, which will be used by the PrintReport extension below.
 	if args.arch == 'unet':
 		model = UNet(class_num=5)
+	if args.weight is not None:
+		chainer.serializers.load_npz(args.weight, model)
 	if args.gpu >= 0:
 		# Make a specified GPU current
 		chainer.cuda.get_device_from_id(args.gpu).use()
@@ -85,10 +93,10 @@ def train_model():
 	mean = np.load(os.path.join(data_root, "mean.npy"))
 	
 	# Load the MNIST dataset
-	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, tcrop_wh, scale=args.scale,
+	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
 								mean=mean, random_crop=True, hflip=True, color_distort=color_distort)
 	
-	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, vcrop_wh, scale=args.scale,
+	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
 								mean=mean, random_crop=False, hflip=False, color_distort=False)
 
 	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)

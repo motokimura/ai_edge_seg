@@ -1,5 +1,6 @@
 cupy-cuda92==6.0.0b1
 chainer==6.0.0b1
+chainercv==0.11.0
 numpy
 pyyaml
 scipy
