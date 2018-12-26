@@ -68,6 +68,7 @@ def train_model():
 		pass
 	
 	print('Data type: {}'.format(args.data_type))
+	print('# Optimizer: {}'.format(args.opt))
 	print('# Image scale: {}'.format(args.scale))
 	print('# Train crop-size: {}'.format(args.tcrop))
 	print('# Test crop-size: {}'.format(args.vcrop))
