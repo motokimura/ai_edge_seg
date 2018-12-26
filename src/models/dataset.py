@@ -46,7 +46,7 @@ def _read_image_as_array(path, dtype, scale, resample=Image.NEAREST):
 class LabeledImageDataset(dataset_mixin.DatasetMixin):
 	def __init__(self, data_type, dataset, root, crop_wh, scale=1,
 				 dtype=np.float32, label_dtype=np.int32, mean=None,
-				 random_crop=False, hflip=False, color_distort=False):
+				 random_crop=False, hflip=False, color_distort=False, pad=0):
 		assert data_type in ['cityscapes', 'aiedge']
 		_check_pillow_availability()
 		if isinstance(dataset, six.string_types):
@@ -69,6 +69,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		self._random_crop = random_crop
 		self._hflip = hflip
 		self._color_distort = color_distort
+		self._pad = pad
 
 		self._get_label = self._get_cityscapes_label if data_type == 'cityscapes' else self._get_aiedge_label
 
@@ -120,6 +121,13 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 			image = np.pad(image, [(0, 0), (pad_left, pad_right), (0, 0)], 'symmetric')
 			label = np.pad(label, [(0, 0), (pad_left, pad_right)], 'constant', constant_values=255)
 			w = self._crop_w
+		
+		if self._pad > 0:
+			pad = self._pad
+			image = np.pad(image, [(pad, pad), (pad, pad), (0, 0)], 'symmetric')
+			label = np.pad(label, [(pad, pad), (pad, pad)], 'constant', constant_values=255)
+			h = h + 2 * pad
+			w = w + 2 * pad
 
 		if self._random_crop:
 			# Random crop

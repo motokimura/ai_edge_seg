@@ -9,7 +9,7 @@ import chainer
 import chainer.functions as F
 import chainer.links as L
 from chainer import training
-from chainer.training import extensions
+from chainer.training import extensions, triggers
 
 from unet import UNet
 from dataset import LabeledImageDataset
@@ -25,6 +25,8 @@ def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
 	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
+	parser.add_argument('--base-width', '-bw', type=int, default=32,
+						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=0.5,
 						help='Scale factor to resize images')
 	parser.add_argument('--tcrop', '-t', type=int, nargs=2, default=[1024, 512],
@@ -37,6 +39,12 @@ def train_model():
 						help='Number of images in each test mini-batch')
 	parser.add_argument('--epoch', '-e', type=int, default=100,
 						help='Number of sweeps over the dataset to train')
+	parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam',
+						help='Optimizer to use')
+	parser.add_argument('--lr-shift', type=int, nargs='*', default=[70, 90],
+						help='Points to shift learning rate exponentially by 0.1')
+	parser.add_argument('--lr', type=float, default=0.01,
+						help='Initial leraning rate used in MomentumSGD optimizer')
 	parser.add_argument('--frequency', '-f', type=int, default=1,
 						help='Frequency of taking a snapshot')
 	parser.add_argument('--gpu', '-g', type=int, default=0,
@@ -56,7 +64,7 @@ def train_model():
 		color_distort = True
 	if args.data_type == 'aiedge':
 		data_root = '../../data/aiedge'
-		color_distort = True
+		color_distort = False
 		pass
 	
 	print('Data type: {}'.format(args.data_type))
@@ -77,7 +85,7 @@ def train_model():
 	# Classifier reports softmax cross entropy loss and accuracy at every
 	# iteration, which will be used by the PrintReport extension below.
 	if args.arch == 'unet':
-		model = UNet(class_num=5)
+		model = UNet(class_num=5, base_width=args.base_width)
 	if args.weight is not None:
 		chainer.serializers.load_npz(args.weight, model)
 	if args.gpu >= 0:
@@ -86,7 +94,10 @@ def train_model():
 		model.to_gpu()  # Copy the model to the GPU
 
 	# Setup an optimizer
-	optimizer = chainer.optimizers.Adam()
+	if args.opt == 'adam':
+		optimizer = chainer.optimizers.Adam()
+	if args.opt == 'sgd':
+		optimizer = chainer.optimizers.MomentumSGD(lr=args.lr, momentum=0.9)
 	optimizer.setup(model)
 	
 	# Load mean image
@@ -94,10 +105,10 @@ def train_model():
 	
 	# Load the MNIST dataset
 	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
-								mean=mean, random_crop=True, hflip=True, color_distort=color_distort)
+								mean=mean, random_crop=True, hflip=True, color_distort=color_distort, pad=16)
 	
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
-								mean=mean, random_crop=False, hflip=False, color_distort=False)
+								mean=mean, random_crop=False, hflip=False, color_distort=False, pad=0)
 
 	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
 	test_iter = chainer.iterators.SerialIterator(test, args.test_batchsize, repeat=False, shuffle=False)
@@ -128,6 +139,14 @@ def train_model():
 	# Write a log of evaluation statistics for each epoch
 	trainer.extend(extensions.LogReport())
 
+	if (args.opt == 'sgd') and (len(args.lr_shift) > 0):
+		# Decay learning rate at some epochs
+		trainer.extend(extensions.ExponentialShift('lr', 0.1), 
+					   trigger=triggers.ManualScheduleTrigger(args.lr_shift, 'epoch'))
+
+	# Monitor learning rate at every iteration
+	trainer.extend(extensions.observe_lr(), trigger=(1, 'iteration'))
+
 	# Save two plot images to the result dir
 	if args.plot and extensions.PlotReport.available():
 		trainer.extend(
@@ -150,7 +169,7 @@ def train_model():
 	# either the updater or the evaluator.
 	trainer.extend(extensions.PrintReport(
 		['epoch', 'iou', 'main/loss', 'validation/main/loss',
-		 'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+		 'main/accuracy', 'validation/main/accuracy', 'lr', 'elapsed_time']))
 
 	# Print a progress bar to stdout
 	trainer.extend(extensions.ProgressBar())
@@ -158,7 +177,7 @@ def train_model():
 	# Write training log to TensorBoard log file
 	trainer.extend(TensorboardLogger(writer, [
 		'main/loss', 'main/accuracy', 
-		'validation/main/loss', 'validation/main/accuracy'
+		'validation/main/loss', 'validation/main/accuracy', 'lr'
 		], x='iteration'))
 
 	entries = entries = ['iou']
