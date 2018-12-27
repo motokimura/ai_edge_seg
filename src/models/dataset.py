@@ -70,7 +70,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		self._hflip = hflip
 		self._color_distort = color_distort
 		self._pad = pad
-		self._clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8)) if clahe else None
+		self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)) if clahe else None
 
 		self._get_label = self._get_cityscapes_label if data_type == 'cityscapes' else self._get_aiedge_label
 
