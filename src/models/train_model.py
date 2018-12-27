@@ -57,6 +57,8 @@ def train_model():
 						help='Resume the training from snapshot')
 	parser.add_argument('--noplot', dest='plot', action='store_false',
 						help='Disable PlotReport extension')
+	parser.add_argument('--loaderjob', '-j', type=int,
+                        help='Number of parallel data loading processes')
 	args = parser.parse_args()
 
 	if args.data_type == 'cityscapes':
@@ -116,8 +118,8 @@ def train_model():
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
 								mean=mean, clahe=clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
 
-	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
-	test_iter = chainer.iterators.SerialIterator(test, args.test_batchsize, repeat=False, shuffle=False)
+	train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize, n_processes=args.loaderjob)
+	test_iter = chainer.iterators.MultiprocessIterator(test, args.test_batchsize, n_processes=args.loaderjob, repeat=False, shuffle=False)
 
 	# Set up a trainer
 	updater = training.StandardUpdater(
