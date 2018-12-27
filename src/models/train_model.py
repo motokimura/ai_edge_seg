@@ -41,7 +41,7 @@ def train_model():
 						help='Number of sweeps over the dataset to train')
 	parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam',
 						help='Optimizer to use')
-	parser.add_argument('--lr-shift', type=int, nargs='*', default=[70, 90],
+	parser.add_argument('--lr-shift', type=int, nargs='*', default=[60, 90],
 						help='Points to shift learning rate exponentially by 0.1')
 	parser.add_argument('--lr', type=float, default=0.01,
 						help='Initial leraning rate used in MomentumSGD optimizer')
@@ -62,19 +62,24 @@ def train_model():
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
 		color_distort = True
+		clahe = False
 	if args.data_type == 'aiedge':
 		data_root = '../../data/aiedge'
 		color_distort = False
-		pass
+		clahe = True
 	
 	print('Data type: {}'.format(args.data_type))
-	print('# Optimizer: {}'.format(args.opt))
 	print('# Image scale: {}'.format(args.scale))
 	print('# Train crop-size: {}'.format(args.tcrop))
 	print('# Test crop-size: {}'.format(args.vcrop))
 	print('# Minibatch-size: {}'.format(args.batchsize))
 	print('# Epoch: {}'.format(args.epoch))
 	print('# GPU: {}'.format(args.gpu))
+	print('# Optimizer: {}'.format(args.opt))
+	if args.opt == 'sgd':
+		print('## LR shift: {}'.format(args.lr_shift))
+	print('Color distort: {}'.format(color_distort))
+	print('CLAHE: {}'.format(clahe))
 	print('')
 	
 	this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -106,10 +111,10 @@ def train_model():
 	
 	# Load the MNIST dataset
 	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
-								mean=mean, random_crop=True, hflip=True, color_distort=color_distort, pad=16)
+								mean=mean,clahe=clahe , random_crop=True, hflip=True, color_distort=color_distort, pad=16)
 	
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
-								mean=mean, random_crop=False, hflip=False, color_distort=False, pad=0)
+								mean=mean, clahe=clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
 
 	train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
 	test_iter = chainer.iterators.SerialIterator(test, args.test_batchsize, repeat=False, shuffle=False)

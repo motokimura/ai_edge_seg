@@ -45,7 +45,7 @@ def _read_image_as_array(path, dtype, scale, resample=Image.NEAREST):
 
 class LabeledImageDataset(dataset_mixin.DatasetMixin):
 	def __init__(self, data_type, dataset, root, crop_wh, scale=1,
-				 dtype=np.float32, label_dtype=np.int32, mean=None,
+				 dtype=np.float32, label_dtype=np.int32, mean=None, clahe=False,
 				 random_crop=False, hflip=False, color_distort=False, pad=0):
 		assert data_type in ['cityscapes', 'aiedge']
 		_check_pillow_availability()
@@ -70,6 +70,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		self._hflip = hflip
 		self._color_distort = color_distort
 		self._pad = pad
+		self._clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8)) if clahe else None
 
 		self._get_label = self._get_cityscapes_label if data_type == 'cityscapes' else self._get_aiedge_label
 
@@ -98,13 +99,19 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		image_filename, label_filename = self._pairs[i]
 		
 		image_path = os.path.join(self._root, image_filename)
-		image = _read_image_as_array(image_path, np.float64, self._scale, Image.BILINEAR)
+		image = _read_image_as_array(image_path, np.uint8, self._scale, Image.BILINEAR)
 		
 		label_path = os.path.join(self._root, label_filename)
 		label_image = _read_image_as_array(label_path, self._label_dtype, self._scale, Image.NEAREST)
 		label = self._get_label(label_image)
 
 		h, w, _ = image.shape
+
+		# Histogram equalization
+		image_clahe = cv2.empty(shape=[h, w, 3], dtype=image.dtype)
+		for ch in range(3):
+			image_clahe[:, :, ch] = self._clahe.apply(image[:, :, ch])
+		image = image_clahe
 
 		if h < self._crop_h:
 			# Padding
@@ -152,9 +159,9 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		
 		if self._color_distort:
 			image = random_color_distort(image)
-			image = np.asarray(image, dtype=np.float64)
 		
 		# Preprocess
+		image = np.asarray(image, dtype=np.float64)
 		if self._normalize:
 			image = (image - self._mean) / 255.0
 		
