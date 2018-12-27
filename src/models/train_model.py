@@ -33,9 +33,9 @@ def train_model():
 						help='Crop size for train images [w, h]')
 	parser.add_argument('--vcrop', '-v', type=int, nargs=2, default=[1024, 512],
 						help='Crop size for train images [w, h]')
-	parser.add_argument('--batchsize', '-b', type=int, default=5,
+	parser.add_argument('--batchsize', '-b', type=int, default=3,
 						help='Number of images in each mini-batch')
-	parser.add_argument('--test-batchsize', '-B', type=int, default=1,
+	parser.add_argument('--test-batchsize', '-B', type=int, default=3,
 						help='Number of images in each test mini-batch')
 	parser.add_argument('--epoch', '-e', type=int, default=100,
 						help='Number of sweeps over the dataset to train')
