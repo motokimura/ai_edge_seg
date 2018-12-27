@@ -108,10 +108,11 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		h, w, _ = image.shape
 
 		# Histogram equalization
-		image_clahe = np.empty(shape=[h, w, 3], dtype=image.dtype)
-		for ch in range(3):
-			image_clahe[:, :, ch] = self._clahe.apply(image[:, :, ch])
-		image = image_clahe
+		if self._clahe is not None:
+			image_clahe = np.empty(shape=[h, w, 3], dtype=image.dtype)
+			for ch in range(3):
+				image_clahe[:, :, ch] = self._clahe.apply(image[:, :, ch])
+			image = image_clahe
 
 		if h < self._crop_h:
 			# Padding
