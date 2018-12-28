@@ -29,6 +29,8 @@ def train_model():
 						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=0.5,
 						help='Scale factor to resize images')
+	parser.add_argument('--clahe', action='store_true',
+						help='CLAHE preprocessing')
 	parser.add_argument('--tcrop', '-t', type=int, nargs=2, default=[1024, 512],
 						help='Crop size for train images [w, h]')
 	parser.add_argument('--vcrop', '-v', type=int, nargs=2, default=[1024, 512],
@@ -37,7 +39,7 @@ def train_model():
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=3,
 						help='Number of images in each test mini-batch')
-	parser.add_argument('--epoch', '-e', type=int, default=100,
+	parser.add_argument('--epoch', '-e', type=int, default=200,
 						help='Number of sweeps over the dataset to train')
 	parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam',
 						help='Optimizer to use')
@@ -64,11 +66,9 @@ def train_model():
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
 		color_distort = True
-		clahe = False
 	if args.data_type == 'aiedge':
 		data_root = '../../data/aiedge'
 		color_distort = False
-		clahe = True
 	
 	print('Data type: {}'.format(args.data_type))
 	print('# Image scale: {}'.format(args.scale))
@@ -81,7 +81,7 @@ def train_model():
 	if args.opt == 'sgd':
 		print('## LR shift: {}'.format(args.lr_shift))
 	print('Color distort: {}'.format(color_distort))
-	print('CLAHE: {}'.format(clahe))
+	print('CLAHE: {}'.format(args.clahe))
 	print('')
 	
 	this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -113,10 +113,10 @@ def train_model():
 	
 	# Load the MNIST dataset
 	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
-								mean=mean,clahe=clahe , random_crop=True, hflip=True, color_distort=color_distort, pad=16)
+								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=color_distort, pad=32)
 	
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
-								mean=mean, clahe=clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
+								mean=mean, clahe=args.clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
 
 	train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize, n_processes=args.loaderjob)
 	test_iter = chainer.iterators.MultiprocessIterator(test, args.test_batchsize, n_processes=args.loaderjob, repeat=False, shuffle=False)

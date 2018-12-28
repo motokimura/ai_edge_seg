@@ -131,7 +131,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 			w = self._crop_w
 		
 		if self._pad > 0:
-			pad = self._pad
+			pad = int(self._pad * self._scale)
 			image = np.pad(image, [(pad, pad), (pad, pad), (0, 0)], 'symmetric')
 			label = np.pad(label, [(pad, pad), (pad, pad)], 'constant', constant_values=255)
 			h = h + 2 * pad
