@@ -80,8 +80,8 @@ def train_model():
 	print('# Optimizer: {}'.format(args.opt))
 	if args.opt == 'sgd':
 		print('## LR shift: {}'.format(args.lr_shift))
-	print('Color distort: {}'.format(color_distort))
-	print('CLAHE: {}'.format(args.clahe))
+	print('# Color distort: {}'.format(color_distort))
+	print('# CLAHE: {}'.format(args.clahe))
 	print('')
 	
 	this_dir = os.path.dirname(os.path.abspath(__file__))
