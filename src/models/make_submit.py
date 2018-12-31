@@ -5,12 +5,13 @@ import os
 import json
 import argparse
 from PIL import Image
+from tqdm improt tqdm
 
 def make_json(annotations_path, categories):
     count = 0
     P = os.listdir(annotations_path)
     json_data = {}
-    for p in P:
+    for p in tqdm(P):
         if '.png' in p:
             name = p.split('.')[0]+'.jpg'
             json_data[name]={}
