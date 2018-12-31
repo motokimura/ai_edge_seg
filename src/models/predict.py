@@ -7,6 +7,7 @@ import cv2
 import math
 from PIL import Image
 from skimage import io
+from tqdm import tqdm
 
 import chainer
 import chainer.functions as F
