@@ -31,6 +31,8 @@ def train_model():
 						help='Scale factor to resize images')
 	parser.add_argument('--clahe', action='store_true',
 						help='CLAHE preprocessing')
+	parser.add_argument('--cdist', action='store_true',
+						help='Color distorsion augmentation')
 	parser.add_argument('--tcrop', '-t', type=int, nargs=2, default=[1024, 512],
 						help='Crop size for train images [w, h]')
 	parser.add_argument('--vcrop', '-v', type=int, nargs=2, default=[1024, 512],
@@ -65,10 +67,8 @@ def train_model():
 
 	if args.data_type == 'cityscapes':
 		data_root = '../../data/cityscapes'
-		color_distort = True
 	if args.data_type == 'aiedge':
 		data_root = '../../data/aiedge'
-		color_distort = False
 	
 	print('Data type: {}'.format(args.data_type))
 	print('# Image scale: {}'.format(args.scale))
@@ -80,7 +80,7 @@ def train_model():
 	print('# Optimizer: {}'.format(args.opt))
 	if args.opt == 'sgd':
 		print('## LR shift: {}'.format(args.lr_shift))
-	print('# Color distort: {}'.format(color_distort))
+	print('# Color distort: {}'.format(args.cdist))
 	print('# CLAHE: {}'.format(args.clahe))
 	print('')
 	
@@ -113,7 +113,7 @@ def train_model():
 	
 	# Load the MNIST dataset
 	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
-								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=color_distort, pad=32)
+								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=args.cdist, pad=32)
 	
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
 								mean=mean, clahe=args.clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
