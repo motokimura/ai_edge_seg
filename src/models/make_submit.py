@@ -5,7 +5,7 @@ import os
 import json
 import argparse
 from PIL import Image
-from tqdm improt tqdm
+from tqdm import tqdm
 
 def make_json(annotations_path, categories):
     count = 0
