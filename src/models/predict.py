@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+import argparse
+import os
 
 import numpy as np
 import cv2
 import math
 from PIL import Image
+from skimage import io
 
 import chainer
 import chainer.functions as F
@@ -116,3 +119,35 @@ class SegmentationModel:
 		bottom, right = top + h, left + w
 
 		return image_in, (top, left, bottom, right)
+
+
+if __name__ == '__main__':
+
+	parser = argparse.ArgumentParser(description='Prediction by SS model')
+	parser.add_argument('model', help='Path to model weight file')
+	parser.add_argument('outdir', help='Output directory')
+	parser.add_argument('--scale', '-s', type=float, default=0.5)
+	parser.add_argument('--noclahe', dest='clahe', action='store_false')
+	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
+	parser.add_argument('--mean', default='../../data/aiedge/mean.npy')
+	parser.add_argument('--gpu', '-g', type=int, default=0)
+	args = parser.parse_args()
+
+	outdir = os.path.join(args.outdir, 'data')
+	os.makedirs(outdir)
+
+	mean = np.load(args.mean)
+	model = SegmentationModel(args.model, mean, scale=args.scale, clahe=args.clahe, gpu=args.gpu)
+
+	image_files = os.listdir(args.root)
+	image_files.sort()
+
+	for filename in tqdm(image_files):
+		path = os.path.join(args.root, filename)
+		pil_image = Image.open(path)
+
+		_, mask = model.apply_segmentation(pil_image)
+
+		basename, _ = os.path.splitext(filename)
+		out_path = os.path.join(outdir, '{}.png'.format(basename))
+		io.imsave(out_path, mask)
