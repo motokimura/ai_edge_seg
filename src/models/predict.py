@@ -20,8 +20,10 @@ class SegmentationModel:
 		self._model = UNet(class_num, base_width)
 		serializers.load_npz(model_path, self._model)
 
-		chainer.cuda.get_device(gpu).use()
-		self._model.to_gpu(gpu)
+		if gpu >= 0:
+			chainer.cuda.get_device(gpu).use()
+			self._model.to_gpu(gpu)
+		self._gpu = gpu
 
 		# Add height and width dimensions to mean 
 		self._mean = mean[np.newaxis, np.newaxis, :]
@@ -49,7 +51,10 @@ class SegmentationModel:
 			score = self._model.predict(image_in)
 		
 		score = F.softmax(score)
-		score = cuda.to_cpu(score.data)[0]
+		score = score.data
+		if self._gpu >= 0:
+			score = cuda.to_cpu(score)
+		score = score[0] # Assuming batch size is 1
 		
 		top, left, bottom, right = crop
 		score = score[:, top:bottom, left:right]
@@ -100,7 +105,12 @@ class SegmentationModel:
 		# Reshape and conversion from numpy.ndarray to chainer.Variable
 		image_in = image_in.transpose(2, 0, 1)
 		image_in = image_in[np.newaxis, :, :, :]
-		image_in = Variable(cuda.cupy.asarray(image_in, dtype=cuda.cupy.float32))
+
+		if self._gpu >= 0:
+			image_in = cuda.cupy.asarray(image_in, dtype=cuda.cupy.float32)
+		else:
+			image_in = np.asarray(image_in, dtype=np.float32)
+		image_in = Variable(image_in)
 
 		top, left = pad_y1, pad_x1
 		bottom, right = top + h, left + w
