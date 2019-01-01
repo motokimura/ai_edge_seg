@@ -29,6 +29,8 @@ def train_model():
 						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=0.5,
 						help='Scale factor to resize images')
+	parser.add_argument('--pad', '-p', type=int, default=0,
+						help='Padding width in px')
 	parser.add_argument('--clahe', action='store_true',
 						help='CLAHE preprocessing')
 	parser.add_argument('--cdist', action='store_true',
@@ -82,6 +84,7 @@ def train_model():
 		print('## LR shift: {}'.format(args.lr_shift))
 	print('# Color distort: {}'.format(args.cdist))
 	print('# CLAHE: {}'.format(args.clahe))
+	print('# Padding: {}'.format(args.pad))
 	print('')
 	
 	this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -113,7 +116,7 @@ def train_model():
 	
 	# Load the MNIST dataset
 	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
-								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=args.cdist, pad=32)
+								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=args.cdist, pad=args.pad)
 	
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
 								mean=mean, clahe=args.clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
