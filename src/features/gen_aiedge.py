@@ -10,7 +10,7 @@ def parse_args():
                         help='Root data directory containing `seg_train_images` and `seg_train_annotations`')
     parser.add_argument('--image_dir', '-i', default='seg_train_images')
     parser.add_argument('--label_dir', '-l', default='seg_train_annotations')
-    parser.add_argument('--split', '-s', type=float, nargs=2, default=[0.75, 0.25],
+    parser.add_argument('--split', '-s', type=float, nargs=2, default=[0.8, 0.2],
                         help='Split ratio for train/val')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random seed')
