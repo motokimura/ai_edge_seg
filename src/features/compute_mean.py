@@ -30,14 +30,14 @@ def compute_mean(dataset):
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Compute images mean array')
-	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
+	parser.add_argument('data_type', choices=['cityscapes', 'aiedge', 'aiedge_day', 'aiedge_night'])
 	args = parser.parse_args()
 
+	data_root = os.path.join('../../data', args.data_type)
+
 	if args.data_type == 'cityscapes':
-		data_root = '../../data/cityscapes'
 		crop_wh = (2048, 1024)
-	if args.data_type == 'aiedge':
-		data_root = '../../data/aiedge'
+	if args.data_type in ['aiedge', 'aiedge_day', 'aiedge_night']:
 		crop_wh = (1936, 1216)
 
 	data_list = os.path.join(data_root, 'train.txt')

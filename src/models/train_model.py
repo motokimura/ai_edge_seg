@@ -23,7 +23,7 @@ import os
 
 def train_model():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('data_type', choices=['cityscapes', 'aiedge'])
+	parser.add_argument('data_type', choices=['cityscapes', 'aiedge', 'aiedge_day', 'aiedge_night'])
 	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
 	parser.add_argument('--base-width', '-bw', type=int, default=32,
 						help='Base width of U-Net')
@@ -67,10 +67,7 @@ def train_model():
                         help='Number of parallel data loading processes')
 	args = parser.parse_args()
 
-	if args.data_type == 'cityscapes':
-		data_root = '../../data/cityscapes'
-	if args.data_type == 'aiedge':
-		data_root = '../../data/aiedge'
+	data_root = os.path.join('../../data', args.data_type)
 	
 	print('Data type: {}'.format(args.data_type))
 	print('# Image scale: {}'.format(args.scale))

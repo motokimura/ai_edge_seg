@@ -47,7 +47,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 	def __init__(self, data_type, dataset, root, crop_wh, scale=1,
 				 dtype=np.float32, label_dtype=np.int32, mean=None, clahe=False,
 				 random_crop=False, hflip=False, color_distort=False, pad=0):
-		assert data_type in ['cityscapes', 'aiedge']
+		assert data_type in ['cityscapes', 'aiedge', 'aiedge_day', 'aiedge_night']
 		_check_pillow_availability()
 		if isinstance(dataset, six.string_types):
 			dataset_path = dataset
