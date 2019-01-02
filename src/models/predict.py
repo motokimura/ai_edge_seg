@@ -127,6 +127,8 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Prediction by SS model')
 	parser.add_argument('model', help='Path to model weight file')
 	parser.add_argument('outdir', help='Output directory')
+	parser.add_argument('--base-width', '-bw', type=int, default=32,
+						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=0.5)
 	parser.add_argument('--noclahe', dest='clahe', action='store_false')
 	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
@@ -134,11 +136,14 @@ if __name__ == '__main__':
 	parser.add_argument('--gpu', '-g', type=int, default=0)
 	args = parser.parse_args()
 
-	outdir = os.path.join(args.outdir, 'data')
-	os.makedirs(outdir)
+	mask_dir = os.path.join(args.outdir, 'mask')
+	os.makedirs(mask_dir)
+
+	score_dir = os.path.join(args.outdir, 'score')
+	os.makedirs(score_dir)
 
 	mean = np.load(args.mean)
-	model = SegmentationModel(args.model, mean, scale=args.scale, clahe=args.clahe, gpu=args.gpu)
+	model = SegmentationModel(args.model, mean, scale=args.scale, clahe=args.clahe, gpu=args.gpu, base_width=args.base_width)
 
 	image_files = os.listdir(args.root)
 	image_files.sort()
@@ -147,8 +152,11 @@ if __name__ == '__main__':
 		path = os.path.join(args.root, filename)
 		pil_image = Image.open(path)
 
-		_, mask = model.apply_segmentation(pil_image)
+		score, mask = model.apply_segmentation(pil_image)
 
 		basename, _ = os.path.splitext(filename)
-		out_path = os.path.join(outdir, '{}.png'.format(basename))
-		io.imsave(out_path, mask)
+		mask_path = os.path.join(mask_dir, '{}.png'.format(basename))
+		io.imsave(mask_path, mask)
+
+		score_path = os.path.join(score_dir, '{}.npy'.format(basename))
+		np.save(score_path, score)
