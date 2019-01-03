@@ -11,7 +11,10 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Ensemble')
 	parser.add_argument('--inputs', '-i', nargs='+', help='Model score directories')
 	parser.add_argument('--outdir', '-o', default='.', help='Output directory')
+	parser.add_argument('--weight', '-w', type=float, nargs=5, default=None)
 	args = parser.parse_args()
+
+	weight = np.ones(shape=[1, 1, 5]) if (args.weight is None) else np.array([[args.weight]])
 
 	mask_dir = os.path.join(args.outdir, 'mask')
 	os.makedirs(mask_dir)
@@ -20,6 +23,7 @@ if __name__ == '__main__':
 
 	for filename in tqdm(filenames):
 		score = np.load(os.path.join(args.inputs[0], filename))
+		score = score * weight
 		for model in args.inputs[1:]:
 			score += np.load(os.path.join(model, filename))
 		
