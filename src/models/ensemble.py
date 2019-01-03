@@ -9,24 +9,23 @@ from tqdm import tqdm
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Ensemble')
-	parser.add_argument('input_1', help='Model-1 score dir')
-	parser.add_argument('input_2', help='Model-2 score dir')
-	parser.add_argument('outdir', help='Output directory')
+	parser.add_argument('--inputs', '-i', nargs='+', help='Model score directories')
+	parser.add_argument('--outdir', '-o', default='.', help='Output directory')
 	args = parser.parse_args()
 
 	mask_dir = os.path.join(args.outdir, 'mask')
 	os.makedirs(mask_dir)
 
-	filenames = os.listdir(args.input_1)
+	filenames = os.listdir(args.inputs[0])
 
 	for filename in tqdm(filenames):
-		score_1 = np.load(os.path.join(args.input_1, filename))
-		score_2 = np.load(os.path.join(args.input_2, filename))
+		score = np.load(os.path.join(args.inputs[0], filename))
+		for model in args.inputs[1:]:
+			score += np.load(os.path.join(model, filename))
+		
+		score /= float(len(args.inputs))
 
-		h, w, c = score_1.shape
-		score = np.zeros(shape=[h, w, c], dtype=score_1.dtype)
-		score = (score_1 + score_2) / 2.0
-
+		h, w, c = score.shape
 		mask = np.zeros(shape=[h, w, 3], dtype=np.uint8)
 		class_idx = np.argmax(score, axis=2)
 		mask[class_idx == 0] = np.array([0, 0, 0])      # 0: "background"
