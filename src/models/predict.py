@@ -18,7 +18,7 @@ from unet import UNet
 
 class SegmentationModel:
 
-	def __init__(self, model_path, mean, scale=1.0, clahe=True, class_num=5, base_width=32, gpu=0):
+	def __init__(self, model_path, mean, scale=1.0, clahe=True, class_num=5, base_width=32, gpu=0, class_weight=None):
 
 		# Load model
 		self._model = UNet(class_num, base_width)
@@ -37,6 +37,9 @@ class SegmentationModel:
 
 		# Histogram equalization preprocess
 		self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)) if clahe else None
+
+		# Weight for each class
+		self._class_weight = np.ones(shape=[1, 1, class_num]) if (class_weight is None) else np.array([[class_weight]])
 
 
 	def apply_segmentation(self, pil_image):
@@ -67,6 +70,9 @@ class SegmentationModel:
 		# Up-sample
 		if self._scale != 1.0:
 			score = cv2.resize(score, (w_orig, h_orig), interpolation=cv2.INTER_LINEAR)
+		
+		# Apply class weight
+		score = score * self._class_weight
 
 		# Visualization
 		h, w, _ = score.shape
@@ -134,6 +140,7 @@ if __name__ == '__main__':
 	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
 	parser.add_argument('--mean', default='../../data/aiedge/mean.npy')
 	parser.add_argument('--gpu', '-g', type=int, default=0)
+	parser.add_argument('--weight', '-w', type=float, nargs=5, default=None)
 	args = parser.parse_args()
 
 	mask_dir = os.path.join(args.outdir, 'mask')
@@ -143,7 +150,10 @@ if __name__ == '__main__':
 	os.makedirs(score_dir)
 
 	mean = np.load(args.mean)
-	model = SegmentationModel(args.model, mean, scale=args.scale, clahe=args.clahe, gpu=args.gpu, base_width=args.base_width)
+	model = SegmentationModel(
+		args.model, mean, 
+		scale=args.scale, clahe=args.clahe, gpu=args.gpu, base_width=args.base_width, class_weight=args.weight
+	)
 
 	image_files = os.listdir(args.root)
 	image_files.sort()
