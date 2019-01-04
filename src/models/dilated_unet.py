@@ -25,7 +25,7 @@ class DilatedUNet(chainer.Chain):
             ## pooling x 1/2
 
             # Bottleneck's dilated conv layers
-            self.b0 = L.DilatedConvolution2D(8*w, 8*w, 3, 1, pad=1,  dilate=1 )
+            self.b0 = L.DilatedConvolution2D(4*w, 8*w, 3, 1, pad=1,  dilate=1 )
             self.b1 = L.DilatedConvolution2D(8*w, 8*w, 3, 1, pad=2,  dilate=2 )
             self.b2 = L.DilatedConvolution2D(8*w, 8*w, 3, 1, pad=4,  dilate=4 )
             self.b3 = L.DilatedConvolution2D(8*w, 8*w, 3, 1, pad=8,  dilate=8 )
