@@ -96,7 +96,7 @@ class DilatedUNet(chainer.Chain):
         d4_out = F.relu(self.d4(d5_out))
         del d5_out
         up4_out = self.up4(d4_out)
-        del b4_out
+        del d4_out
         d3_out = F.relu(self.d3(F.concat([e3_out, up4_out])))
         del e3_out, up4_out
         d2_out = F.relu(self.d2(d3_out))
