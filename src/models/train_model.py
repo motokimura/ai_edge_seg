@@ -138,7 +138,7 @@ def train_model():
 	# Take a snapshot for each specified epoch
 	frequency = args.epoch if args.frequency == -1 else max(1, args.frequency)
 	trainer.extend(extensions.snapshot(
-		filename='snapshot_epoch_{.updater.epoch}'), trigger=(frequency, 'epoch'))
+		filename='snapshot'), trigger=(frequency, 'epoch'))
 	
 	# Save trained model for each specific epoch
 	trainer.extend(extensions.snapshot_object(
