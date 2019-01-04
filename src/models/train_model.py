@@ -71,6 +71,7 @@ def train_model():
 	data_root = os.path.join('../../data', args.data_type)
 	
 	print('Data type: {}'.format(args.data_type))
+	print('# Data split : {}'.format(args.split))
 	print('# Image scale: {}'.format(args.scale))
 	print('# Train crop-size: {}'.format(args.tcrop))
 	print('# Test crop-size: {}'.format(args.vcrop))
