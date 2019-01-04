@@ -24,6 +24,7 @@ import os
 def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge', 'aiedge_day', 'aiedge_night'])
+	parser.add_argument('--split', type=int, default=None)
 	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
 	parser.add_argument('--base-width', '-bw', type=int, default=32,
 						help='Base width of U-Net')
@@ -43,7 +44,7 @@ def train_model():
 						help='Number of images in each mini-batch')
 	parser.add_argument('--test-batchsize', '-B', type=int, default=3,
 						help='Number of images in each test mini-batch')
-	parser.add_argument('--epoch', '-e', type=int, default=200,
+	parser.add_argument('--epoch', '-e', type=int, default=300,
 						help='Number of sweeps over the dataset to train')
 	parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam',
 						help='Optimizer to use')
@@ -112,10 +113,12 @@ def train_model():
 	mean = np.load(os.path.join(data_root, "mean.npy"))
 	
 	# Load the MNIST dataset
-	train = LabeledImageDataset(args.data_type, os.path.join(data_root, "train.txt"), data_root, args.tcrop, scale=args.scale,
+	train_list = 'train.txt' if (args.split is None) else 'train_{}.txt'.format(args.split)
+	train = LabeledImageDataset(args.data_type, os.path.join(data_root, train_list), data_root, args.tcrop, scale=args.scale,
 								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=args.cdist, pad=args.pad)
 	
-	test = LabeledImageDataset (args.data_type, os.path.join(data_root, "val.txt"), data_root, args.vcrop, scale=args.scale,
+	val_list = 'val.txt' if (args.split is None) else 'val_{}.txt'.format(args.split)
+	test = LabeledImageDataset (args.data_type, os.path.join(data_root, val_list), data_root, args.vcrop, scale=args.scale,
 								mean=mean, clahe=args.clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
 
 	train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize, n_processes=args.loaderjob)
