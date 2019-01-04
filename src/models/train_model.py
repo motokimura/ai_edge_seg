@@ -12,6 +12,7 @@ from chainer import training
 from chainer.training import extensions, triggers
 
 from unet import UNet
+from dilated_unet import DilatedUNet
 from dataset import LabeledImageDataset
 
 from tensorboardX import SummaryWriter
@@ -25,7 +26,7 @@ def train_model():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_type', choices=['cityscapes', 'aiedge', 'aiedge_day', 'aiedge_night'])
 	parser.add_argument('--split', type=int, default=None)
-	parser.add_argument('--arch', '-a', choices=['unet'], default='unet')
+	parser.add_argument('--arch', '-a', choices=['unet', 'dilated'], default='unet')
 	parser.add_argument('--base-width', '-bw', type=int, default=32,
 						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=0.5,
@@ -96,6 +97,8 @@ def train_model():
 	# iteration, which will be used by the PrintReport extension below.
 	if args.arch == 'unet':
 		model = UNet(class_num=5, base_width=args.base_width)
+	if args.arch == 'dilated':
+		model = DilatedUNet(class_num=5, base_width=args.base_width)
 	if args.weight is not None:
 		chainer.serializers.load_npz(args.weight, model)
 	if args.gpu >= 0:
