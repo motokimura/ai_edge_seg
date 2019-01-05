@@ -29,6 +29,8 @@ def train_model():
 	parser.add_argument('--arch', '-a', choices=['unet', 'dilated'], default='unet')
 	parser.add_argument('--base-width', '-bw', type=int, default=32,
 						help='Base width of U-Net')
+	parser.add_argument('--bn', action='store_true',
+						help='Use batch-normalization')
 	parser.add_argument('--scale', '-s', type=float, default=0.5,
 						help='Scale factor to resize images')
 	parser.add_argument('--pad', '-p', type=int, default=0,
@@ -71,6 +73,7 @@ def train_model():
 
 	data_root = os.path.join('../../data', args.data_type)
 	
+	print('Model: {}, width: {}, bn: {}'.format(args.arch, args.base_width, args.bn))
 	print('Data type: {}'.format(args.data_type))
 	print('# Data split : {}'.format(args.split))
 	print('# Image scale: {}'.format(args.scale))
@@ -98,7 +101,7 @@ def train_model():
 	if args.arch == 'unet':
 		model = UNet(class_num=5, base_width=args.base_width)
 	if args.arch == 'dilated':
-		model = DilatedUNet(class_num=5, base_width=args.base_width)
+		model = DilatedUNet(class_num=5, base_width=args.base_width, bn=args.bn)
 	if args.weight is not None:
 		chainer.serializers.load_npz(args.weight, model)
 	if args.gpu >= 0:
