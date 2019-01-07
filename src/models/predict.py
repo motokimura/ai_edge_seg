@@ -19,7 +19,8 @@ from dilated_unet import DilatedUNet
 
 class SegmentationModel:
 
-	def __init__(self, model_path, mean, arch='unet', scale=1.0, clahe=True, class_num=5, base_width=32, gpu=0, class_weight=None):
+	def __init__(self, model_path, mean, 
+		arch='unet', scale=1.0, clahe=True, class_num=5, base_width=32, bn=True, gpu=0, class_weight=None):
 
 		assert arch in ['unet', 'dilated']
 
@@ -27,7 +28,7 @@ class SegmentationModel:
 		if arch == 'unet':
 			self._model = UNet(class_num, base_width)
 		if arch == 'dilated':
-			self._model = DilatedUNet(class_num, base_width, bn=True)
+			self._model = DilatedUNet(class_num, base_width, bn)
 		serializers.load_npz(model_path, self._model)
 
 		if gpu >= 0:
@@ -139,6 +140,8 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Prediction by SS model')
 	parser.add_argument('model', help='Path to model weight file')
 	parser.add_argument('outdir', help='Output directory')
+	parser.add_argument('--arch', '-a', choices=['unet', 'dilated'], default='unet')
+	parser.add_argument('--bn', action='store_true', help='Use batch-normalization')
 	parser.add_argument('--base-width', '-bw', type=int, default=32,
 						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=0.5)
@@ -157,8 +160,8 @@ if __name__ == '__main__':
 
 	mean = np.load(args.mean)
 	model = SegmentationModel(
-		args.model, mean, 
-		scale=args.scale, clahe=args.clahe, gpu=args.gpu, base_width=args.base_width, class_weight=args.weight
+		args.model, mean, arch=args.arch, scale=args.scale, clahe=args.clahe, class_num=5,
+		base_width=args.base_width, bn=args.bn, gpu=args.gpu, class_weight=args.weight
 	)
 
 	image_files = os.listdir(args.root)
