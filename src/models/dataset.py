@@ -46,7 +46,7 @@ def _read_image_as_array(path, dtype, scale, resample=Image.NEAREST):
 class LabeledImageDataset(dataset_mixin.DatasetMixin):
 	def __init__(self, data_type, dataset, root, crop_wh, scale=1,
 				 dtype=np.float32, label_dtype=np.int32, mean=None, clahe=False,
-				 random_crop=False, hflip=False, color_distort=False, pad=0):
+				 random_crop=False, hflip=False, color_distort=False, random_scale=False, pad=0):
 		assert data_type in ['cityscapes', 'aiedge', 'aiedge_day', 'aiedge_night']
 		_check_pillow_availability()
 		if isinstance(dataset, six.string_types):
@@ -69,6 +69,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 		self._random_crop = random_crop
 		self._hflip = hflip
 		self._color_distort = color_distort
+		self._random_scale = random_scale
 		self._pad = pad
 		self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)) if clahe else None
 
@@ -136,21 +137,40 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 			label = np.pad(label, [(pad, pad), (pad, pad)], 'constant', constant_values=255)
 			h = h + 2 * pad
 			w = w + 2 * pad
+		
+		if self._random_scale:
+			# Random scale
+			scale_min = 1.0 / 1.25 # zoom-out to x 1/1.25
+			scale_max = min(1.0 / 0.75, h / self._crop_h, w / self._crop_w) # zoom-in to x 1.0/0.75
+			scale_r = random.uniform(scale_min, scale_max)
+			crop_h, crop_w = scale_r * self._crop_h, scale_r * self._crop_w
+		else:
+			crop_h, crop_w = self._crop_h, self._crop_w
 
 		if self._random_crop:
 			# Random crop
-			top  = random.randint(0, h - self._crop_h)
-			left = random.randint(0, w - self._crop_w)
+			top  = random.randint(0, h - crop_h)
+			left = random.randint(0, w - crop_w)
 		else:
 			# Crop center
-			top = (h - self._crop_h) // 2
-			left = (w - self._crop_w) // 2
+			top = (h - crop_h) // 2
+			left = (w - crop_w) // 2
 		
-		bottom = top + self._crop_h
-		right = left + self._crop_w
+		bottom = top + crop_h
+		right = left + crop_w
 
 		image = image[top:bottom, left:right]
 		label = label[top:bottom, left:right]
+
+		if self._random_scale:
+			# Re-size image to (h, w) = (self._crop_h, self._crop_w)
+			image_pil = Image.fromarray(image)
+			image_pil = image_pil.resize((self._crop_w, self._crop_h), Image.BILINEAR)
+			image = np.asarray(image_pil)
+			# Re-size label to (h, w) = (self._crop_h, self._crop_w)
+			label_pil = Image.fromarray(label)
+			label_pil = label_pil.resize((self._crop_w, self._crop_h), Image.NEAREST)
+			label = np.asarray(label_pil)
 
 		if self._hflip:
 			# Horizontal flip

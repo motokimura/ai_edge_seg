@@ -33,6 +33,8 @@ def train_model():
 						help='Use batch-normalization')
 	parser.add_argument('--scale', '-s', type=float, default=0.5,
 						help='Scale factor to resize images')
+	parser.add_argument('--random-scale', '-rs', action='store_true', 
+						help='Randomly resize image/label pair from 1.0/1.25 to 1.0/0.75')
 	parser.add_argument('--pad', '-p', type=int, default=0,
 						help='Padding width in px')
 	parser.add_argument('--clahe', action='store_true',
@@ -122,11 +124,13 @@ def train_model():
 	# Load the MNIST dataset
 	train_list = 'train.txt' if (args.split is None) else 'train_{}.txt'.format(args.split)
 	train = LabeledImageDataset(args.data_type, os.path.join(data_root, train_list), data_root, args.tcrop, scale=args.scale,
-								mean=mean, clahe=args.clahe , random_crop=True, hflip=True, color_distort=args.cdist, pad=args.pad)
+								mean=mean, clahe=args.clahe, 
+								random_crop=True, hflip=True, color_distort=args.cdist, random_scale=args.random_scale, pad=args.pad)
 	
 	val_list = 'val.txt' if (args.split is None) else 'val_{}.txt'.format(args.split)
 	test = LabeledImageDataset (args.data_type, os.path.join(data_root, val_list), data_root, args.vcrop, scale=args.scale,
-								mean=mean, clahe=args.clahe, random_crop=False, hflip=False, color_distort=False, pad=0)
+								mean=mean, clahe=args.clahe, 
+								random_crop=False, hflip=False, color_distort=False, random_scale=False, pad=0)
 
 	train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize, n_processes=args.loaderjob)
 	test_iter = chainer.iterators.MultiprocessIterator(test, args.test_batchsize, n_processes=args.loaderjob, repeat=False, shuffle=False)
