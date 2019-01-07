@@ -89,6 +89,7 @@ def train_model():
 		print('## LR shift: {}'.format(args.lr_shift))
 	print('# Color distort: {}'.format(args.cdist))
 	print('# CLAHE: {}'.format(args.clahe))
+	print('# Random scaling: {}'.format(args.random_scale))
 	print('# Padding: {}'.format(args.pad))
 	print('')
 	

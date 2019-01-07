@@ -143,7 +143,7 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
 			scale_min = 1.0 / 1.25 # zoom-out to x 1/1.25
 			scale_max = min(1.0 / 0.75, h / self._crop_h, w / self._crop_w) # zoom-in to x 1.0/0.75
 			scale_r = random.uniform(scale_min, scale_max)
-			crop_h, crop_w = scale_r * self._crop_h, scale_r * self._crop_w
+			crop_h, crop_w = int(scale_r * self._crop_h), int(scale_r * self._crop_w)
 		else:
 			crop_h, crop_w = self._crop_h, self._crop_w
 
