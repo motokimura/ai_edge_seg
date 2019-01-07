@@ -21,10 +21,12 @@ class SegmentationModel:
 
 	def __init__(self, model_path, mean, arch='unet', scale=1.0, clahe=True, class_num=5, base_width=32, gpu=0, class_weight=None):
 
+		assert arch in ['unet', 'dilated']
+
 		# Load model
-		if args.arch == 'unet':
+		if arch == 'unet':
 			self._model = UNet(class_num, base_width)
-		if args.arch == 'dilated':
+		if arch == 'dilated':
 			self._model = DilatedUNet(class_num, base_width, bn=True)
 		serializers.load_npz(model_path, self._model)
 
