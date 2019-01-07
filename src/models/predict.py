@@ -14,14 +14,18 @@ import chainer.functions as F
 from chainer import cuda, serializers, Variable
 
 from unet import UNet
+from dilated_unet import DilatedUNet
 
 
 class SegmentationModel:
 
-	def __init__(self, model_path, mean, scale=1.0, clahe=True, class_num=5, base_width=32, gpu=0, class_weight=None):
+	def __init__(self, model_path, mean, arch='unet', scale=1.0, clahe=True, class_num=5, base_width=32, gpu=0, class_weight=None):
 
 		# Load model
-		self._model = UNet(class_num, base_width)
+		if args.arch == 'unet':
+			self._model = UNet(class_num, base_width)
+		if args.arch == 'dilated':
+			self._model = DilatedUNet(class_num, base_width, bn=True)
 		serializers.load_npz(model_path, self._model)
 
 		if gpu >= 0:
