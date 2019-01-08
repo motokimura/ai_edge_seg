@@ -29,14 +29,10 @@ class SegmentationModel:
 		self._base_width = base_width
 		self._bn = bn
 		self._class_num = class_num
+		self._gpu = gpu
 
 		# Load model
 		self.load_weight()
-
-		if gpu >= 0:
-			chainer.cuda.get_device(gpu).use()
-			self._model.to_gpu(gpu)
-		self._gpu = gpu
 
 		# Add height and width dimensions to mean 
 		self._mean = mean[np.newaxis, np.newaxis, :]
@@ -56,6 +52,10 @@ class SegmentationModel:
 		if self._arch == 'dilated':
 			self._model = DilatedUNet(self._class_num, self._base_width, self._bn)
 		serializers.load_npz(self._model_path, self._model)
+
+		if self._gpu >= 0:
+			chainer.cuda.get_device(self._gpu).use()
+			self._model.to_gpu(self._gpu)
 
 	def apply_segmentation(self, pil_image):
 
