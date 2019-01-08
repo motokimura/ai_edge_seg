@@ -24,12 +24,14 @@ class SegmentationModel:
 
 		assert arch in ['unet', 'dilated']
 
+		self._arch = arch
+		self._model_path = model_path
+		self._base_width = base_width
+		self._bn = bn
+		self._class_num = class_num
+
 		# Load model
-		if arch == 'unet':
-			self._model = UNet(class_num, base_width)
-		if arch == 'dilated':
-			self._model = DilatedUNet(class_num, base_width, bn)
-		serializers.load_npz(model_path, self._model)
+		self.load_weight()
 
 		if gpu >= 0:
 			chainer.cuda.get_device(gpu).use()
@@ -47,7 +49,13 @@ class SegmentationModel:
 
 		# Weight for each class
 		self._class_weight = np.ones(shape=[1, 1, class_num]) if (class_weight is None) else np.array([[class_weight]])
-
+	
+	def load_weight(self):
+		if self._arch == 'unet':
+			self._model = UNet(self._class_num, self._base_width)
+		if self._arch == 'dilated':
+			self._model = DilatedUNet(self._class_num, self._base_width, self._bn)
+		serializers.load_npz(self._model_path, self._model)
 
 	def apply_segmentation(self, pil_image):
 
@@ -171,6 +179,7 @@ if __name__ == '__main__':
 		path = os.path.join(args.root, filename)
 		pil_image = Image.open(path)
 
+		model.load_weight()
 		score, mask = model.apply_segmentation(pil_image)
 
 		basename, _ = os.path.splitext(filename)
