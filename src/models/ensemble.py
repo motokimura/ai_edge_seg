@@ -11,10 +11,20 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Ensemble')
 	parser.add_argument('--inputs', '-i', nargs='+', help='Model score directories')
 	parser.add_argument('--outdir', '-o', default='.', help='Output directory')
-	parser.add_argument('--weight', '-w', type=float, nargs=5, default=None)
+	parser.add_argument('--ens-weights', '-w', type=float, nargs='+', default=None)
+	parser.add_argument('--cat-factor', '-c', type=float, nargs=5, default=None)
 	args = parser.parse_args()
 
-	weight = np.ones(shape=[1, 1, 5]) if (args.weight is None) else np.array([[args.weight]])
+	N = len(args.inputs)
+	if args.ens_weights is None:
+		ens_weights = np.ones(shape=[N,])
+	else:
+		assert len(args.ens_weights) == N
+		ens_weights = np.array(args.ens_weights)
+	ens_weights /= N
+
+	cat_factor = np.ones(shape=[1, 1, 5]) if (args.cat_factor is None) else np.array([[args.cat_factor]])
+	cat_factor /= 5
 
 	mask_dir = os.path.join(args.outdir, 'mask')
 	os.makedirs(mask_dir)
@@ -23,11 +33,10 @@ if __name__ == '__main__':
 
 	for filename in tqdm(filenames):
 		score = np.load(os.path.join(args.inputs[0], filename))
-		score = score * weight
-		for model in args.inputs[1:]:
-			score += np.load(os.path.join(model, filename))
-		
-		score /= float(len(args.inputs))
+		score = score * ens_weights[0]
+		for model, w in zip(args.inputs[1:], ens_weights[1:]):
+			score += np.load(os.path.join(model, filename)) * w
+		score *= cat_factor
 
 		h, w, c = score.shape
 		mask = np.zeros(shape=[h, w, 3], dtype=np.uint8)
