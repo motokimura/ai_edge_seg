@@ -169,7 +169,6 @@ if __name__ == '__main__':
 	ens_weights /= N
 
 	cat_factor = np.ones(shape=[1, 1, 5]) if (args.cat_factor is None) else np.array([[args.cat_factor]])
-	cat_factor /= 5
 
 	mask_dir = os.path.join(args.outdir, 'mask')
 	os.makedirs(mask_dir)
@@ -191,7 +190,7 @@ if __name__ == '__main__':
 
 		for i, model_path in enumerate(args.models):
 			ens_weight = ens_weights[i]
-			
+
 			model = SegmentationModel(
 				model_path, mean, arch=args.arch, scale=args.scale, clahe=args.clahe, class_num=5,
 				base_width=args.base_width, bn=args.bn, gpu=args.gpu
