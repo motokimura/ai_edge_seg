@@ -202,7 +202,7 @@ if __name__ == '__main__':
 			score, _ = model.apply_segmentation(pil_image)
 			if args.flip:
 				image_flip = ImageOps.mirror(pil_image)
-				score_flip = model.apply_segmentation(pil_image)
+				score_flip = model.apply_segmentation(image_flip)
 				score = (score + score_flip[:, ::-1, :]) / 2
 
 			score_ensemble += score * ens_weight
