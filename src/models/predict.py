@@ -5,7 +5,7 @@ import os
 import numpy as np
 import cv2
 import math
-from PIL import Image
+from PIL import Image, ImageOps
 from skimage import io
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ from dilated_unet import DilatedUNet
 class SegmentationModel:
 
 	def __init__(self, model_path, mean, 
-		arch='unet', scale=1.0, clahe=True, class_num=5, base_width=32, bn=True, gpu=0, class_weight=None):
+		arch='unet', scale=1.0, clahe=True, class_num=5, base_width=32, bn=True, gpu=0):
 
 		assert arch in ['unet', 'dilated']
 
@@ -42,9 +42,6 @@ class SegmentationModel:
 
 		# Histogram equalization preprocess
 		self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)) if clahe else None
-
-		# Weight for each class
-		self._class_weight = np.ones(shape=[1, 1, class_num]) if (class_weight is None) else np.array([[class_weight]])
 	
 	def load_weight(self):
 		if self._arch == 'unet':
@@ -85,11 +82,13 @@ class SegmentationModel:
 		# Up-sample
 		if self._scale != 1.0:
 			score = cv2.resize(score, (w_orig, h_orig), interpolation=cv2.INTER_LINEAR)
-		
-		# Apply class weight
-		score = score * self._class_weight
 
 		# Visualization
+		mask = self.make_mask(score)
+		
+		return score, mask
+
+	def make_mask(self, score):
 		h, w, _ = score.shape
 		mask = np.zeros(shape=[h, w, 3], dtype=np.uint8)
 		class_idx = np.argmax(score, axis=2)
@@ -98,9 +97,8 @@ class SegmentationModel:
 		mask[class_idx == 2] = np.array([255, 0, 0])    # 2: "pedestrian"
 		mask[class_idx == 3] = np.array([255, 255, 0])  # 3: "signal"
 		mask[class_idx == 4] = np.array([69, 47, 142])  # 4: "lane" (road + parking)
-		
-		return score, mask
 
+		return mask
 
 	def _preprocess(self, image):
 
@@ -146,19 +144,32 @@ class SegmentationModel:
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Prediction by SS model')
-	parser.add_argument('model', help='Path to model weight file')
 	parser.add_argument('outdir', help='Output directory')
-	parser.add_argument('--arch', '-a', choices=['unet', 'dilated'], default='unet')
+	parser.add_argument('--models', '-m', nargs='+', help='Paths to models weight file')
+	parser.add_argument('--ens-weights', '-w', type=float, nargs='+', default=None)
+	parser.add_argument('--cat-factor', '-c', type=float, nargs=5, default=None)
+	parser.add_argument('--flip', action='store_true')
+	parser.add_argument('--arch', '-a', choices=['unet', 'dilated'], default='dilated')
 	parser.add_argument('--bn', action='store_true', help='Use batch-normalization')
-	parser.add_argument('--base-width', '-bw', type=int, default=32,
+	parser.add_argument('--base-width', '-bw', type=int, default=44,
 						help='Base width of U-Net')
-	parser.add_argument('--scale', '-s', type=float, default=0.5)
+	parser.add_argument('--scale', '-s', type=float, default=1.0)
 	parser.add_argument('--noclahe', dest='clahe', action='store_false')
 	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
 	parser.add_argument('--mean', default='../../data/aiedge/mean.npy')
 	parser.add_argument('--gpu', '-g', type=int, default=0)
-	parser.add_argument('--weight', '-w', type=float, nargs=5, default=None)
 	args = parser.parse_args()
+
+	N = len(args.models)
+	if args.ens_weights is None:
+		ens_weights = np.ones(shape=[N,])
+	else:
+		assert len(args.ens_weights) == N
+		ens_weights = np.array(args.ens_weights)
+	ens_weights /= N
+
+	cat_factor = np.ones(shape=[1, 1, 5]) if (args.cat_factor is None) else np.array([[args.cat_factor]])
+	cat_factor /= 5
 
 	mask_dir = os.path.join(args.outdir, 'mask')
 	os.makedirs(mask_dir)
@@ -167,10 +178,6 @@ if __name__ == '__main__':
 	os.makedirs(score_dir)
 
 	mean = np.load(args.mean)
-	model = SegmentationModel(
-		args.model, mean, arch=args.arch, scale=args.scale, clahe=args.clahe, class_num=5,
-		base_width=args.base_width, bn=args.bn, gpu=args.gpu, class_weight=args.weight
-	)
 
 	image_files = os.listdir(args.root)
 	image_files.sort()
@@ -179,12 +186,30 @@ if __name__ == '__main__':
 		path = os.path.join(args.root, filename)
 		pil_image = Image.open(path)
 
-		model.load_weight()
-		score, mask = model.apply_segmentation(pil_image)
+		w, h = pil_image.size
+		score_ensemble = np.zeros(shape=[h, w, 5], dtype=np.float32)
+
+		for model_path, ens_weight in zip(args.models, ens_weights):
+			model = SegmentationModel(
+				model_path, mean, arch=args.arch, scale=args.scale, clahe=args.clahe, class_num=5,
+				base_width=args.base_width, bn=args.bn, gpu=args.gpu
+			)
+			model.load_weight()
+			
+			score, _ = model.apply_segmentation(pil_image)
+			if args.flip:
+				image_flip = ImageOps.mirror(pil_image)
+				score_flip = model.apply_segmentation(pil_image)
+				score = (score + score_flip[:, ::-1, :]) / 2
+
+			score_ensemble += score * ens_weight
+
+		score_ensemble *= cat_factor
+		mask_ensemble = model.make_mask(score_ensemble)
 
 		basename, _ = os.path.splitext(filename)
 		mask_path = os.path.join(mask_dir, '{}.png'.format(basename))
-		io.imsave(mask_path, mask)
+		io.imsave(mask_path, mask_ensemble)
 
 		score_path = os.path.join(score_dir, '{}.npy'.format(basename))
-		np.save(score_path, score)
+		np.save(score_path, score_ensemble)
