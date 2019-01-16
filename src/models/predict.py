@@ -150,11 +150,11 @@ if __name__ == '__main__':
 	parser.add_argument('--cat-factor', '-c', type=float, nargs=5, default=None)
 	parser.add_argument('--flip', action='store_true')
 	parser.add_argument('--arch', '-a', choices=['unet', 'dilated'], default='dilated')
-	parser.add_argument('--bn', action='store_true', help='Use batch-normalization')
+	parser.add_argument('--no-bn', dest='bn', action='store_false', help='Disable batch-normalization')
 	parser.add_argument('--base-width', '-bw', type=int, default=44,
 						help='Base width of U-Net')
 	parser.add_argument('--scale', '-s', type=float, default=1.0)
-	parser.add_argument('--noclahe', dest='clahe', action='store_false')
+	parser.add_argument('--no-clahe', dest='clahe', action='store_false')
 	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
 	parser.add_argument('--mean', default='../../data/aiedge/mean.npy')
 	parser.add_argument('--gpu', '-g', type=int, default=0)
