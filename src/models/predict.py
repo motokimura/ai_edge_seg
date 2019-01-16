@@ -189,7 +189,9 @@ if __name__ == '__main__':
 		w, h = pil_image.size
 		score_ensemble = np.zeros(shape=[h, w, 5], dtype=np.float32)
 
-		for model_path, ens_weight in zip(args.models, ens_weights):
+		for i, model_path in enumerate(args.models):
+			ens_weight = ens_weights[i]
+			
 			model = SegmentationModel(
 				model_path, mean, arch=args.arch, scale=args.scale, clahe=args.clahe, class_num=5,
 				base_width=args.base_width, bn=args.bn, gpu=args.gpu
