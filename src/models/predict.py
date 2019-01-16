@@ -198,10 +198,12 @@ if __name__ == '__main__':
 				base_width=args.base_width, bn=args.bn, gpu=args.gpu
 			)
 			model.load_weight()
-			
 			score, _ = model.apply_segmentation(pil_image)
+			
 			if args.flip:
 				image_flip = ImageOps.mirror(pil_image)
+
+				model.load_weight()
 				score_flip, _ = model.apply_segmentation(image_flip)
 				score = (score + score_flip[:, ::-1, :]) / 2
 
