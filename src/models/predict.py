@@ -145,6 +145,7 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Prediction by SS model')
 	parser.add_argument('outdir', help='Output directory')
+	parser.add_argument('--no-score', dest='score', action='store_false')
 	parser.add_argument('--models', '-m', nargs='+', help='Paths to models weight file')
 	parser.add_argument('--ens-weights', '-w', type=float, nargs='+', default=None)
 	parser.add_argument('--cat-factor', '-c', type=float, nargs=5, default=None)
@@ -173,8 +174,9 @@ if __name__ == '__main__':
 	mask_dir = os.path.join(args.outdir, 'mask')
 	os.makedirs(mask_dir)
 
-	score_dir = os.path.join(args.outdir, 'score')
-	os.makedirs(score_dir)
+	if args.score:
+		score_dir = os.path.join(args.outdir, 'score')
+		os.makedirs(score_dir)
 
 	mean = np.load(args.mean)
 
@@ -212,5 +214,6 @@ if __name__ == '__main__':
 		mask_path = os.path.join(mask_dir, '{}.png'.format(basename))
 		io.imsave(mask_path, mask_ensemble)
 
-		score_path = os.path.join(score_dir, '{}.npy'.format(basename))
-		np.save(score_path, score_ensemble)
+		if args.score:
+			score_path = os.path.join(score_dir, '{}.npy'.format(basename))
+			np.save(score_path, score_ensemble)
