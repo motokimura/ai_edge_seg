@@ -154,7 +154,7 @@ if __name__ == '__main__':
 	parser.add_argument('--no-bn', dest='bn', action='store_false', help='Disable batch-normalization')
 	parser.add_argument('--base-width', '-bw', type=int, default=44,
 						help='Base width of U-Net')
-	parser.add_argument('--scales', '-s', type=float, default=None)
+	parser.add_argument('--scales', '-s', type=float, nargs='+', default=None)
 	parser.add_argument('--no-clahe', dest='clahe', action='store_false')
 	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
 	parser.add_argument('--mean', default='../../data/aiedge/mean.npy')
