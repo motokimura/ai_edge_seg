@@ -172,7 +172,7 @@ if __name__ == '__main__':
 	if len(args.scales) == 1:
 		scales = np.ones(shape=[N,])
 	else:
-		assert len(args.scales) == N:
+		assert len(args.scales) == N
 		scales = np.array(args.scales)
 
 	cat_factor = np.ones(shape=[1, 1, 5]) if (args.cat_factor is None) else np.array([[args.cat_factor]])
