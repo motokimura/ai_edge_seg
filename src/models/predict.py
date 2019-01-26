@@ -154,7 +154,7 @@ if __name__ == '__main__':
 	parser.add_argument('--no-bn', dest='bn', action='store_false', help='Disable batch-normalization')
 	parser.add_argument('--base-width', '-bw', type=int, default=44,
 						help='Base width of U-Net')
-	parser.add_argument('--scale', '-s', type=float, default=1.0)
+	parser.add_argument('--scales', '-s', type=float, default=None)
 	parser.add_argument('--no-clahe', dest='clahe', action='store_false')
 	parser.add_argument('--root', default='../../data/aiedge/seg_test_images')
 	parser.add_argument('--mean', default='../../data/aiedge/mean.npy')
@@ -168,6 +168,12 @@ if __name__ == '__main__':
 		assert len(args.ens_weights) == N
 		ens_weights = np.array(args.ens_weights)
 	ens_weights /= N
+
+	if len(args.scales) == 1:
+		scales = np.ones(shape=[N,])
+	else:
+		assert len(args.scales) == N:
+		scales = np.array(args.scales)
 
 	cat_factor = np.ones(shape=[1, 1, 5]) if (args.cat_factor is None) else np.array([[args.cat_factor]])
 
@@ -192,9 +198,10 @@ if __name__ == '__main__':
 
 		for i, model_path in enumerate(args.models):
 			ens_weight = ens_weights[i]
+			scale = scales[i]
 
 			model = SegmentationModel(
-				model_path, mean, arch=args.arch, scale=args.scale, clahe=args.clahe, class_num=5,
+				model_path, mean, arch=args.arch, scale=scale, clahe=args.clahe, class_num=5,
 				base_width=args.base_width, bn=args.bn, gpu=args.gpu
 			)
 			model.load_weight()
